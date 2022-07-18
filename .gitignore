@@ -5,3 +5,8 @@
 *.sym
 *.o
 *.lst
+*.gbr
+*.sav
+Export.c
+Export.h
+temp
