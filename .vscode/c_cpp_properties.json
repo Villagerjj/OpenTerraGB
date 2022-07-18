@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "GBDK 2020",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/gbdk/include/**"
+            ],
+            "defines": [
+                "__TARGET_gb",
+                "__PORT_gbz80"
+            ],
+            "intelliSenseMode": "msvc-x64"
+        }
+    ],
+    "version": 4
+}

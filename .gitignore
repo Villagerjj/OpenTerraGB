@@ -1,0 +1,7 @@
+*.gb
+*.ihx
+*.map
+*.asm
+*.sym
+*.o
+*.lst

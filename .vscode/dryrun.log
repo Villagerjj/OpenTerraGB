@@ -1,0 +1,5 @@
+make.exe --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/home/barry/Desktop/Creating stuffs/Game Dev/GB development/TerrariaGB'
+C:/gbdk/bin/lcc  -o Terraria.gb Export.c main.c player.c save.c worldtiles.c 
+make: Leaving directory '/home/barry/Desktop/Creating stuffs/Game Dev/GB development/TerrariaGB'
+ 

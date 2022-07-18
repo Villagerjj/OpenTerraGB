@@ -1,0 +1,218 @@
+if (joypad() & J_UP)
+{
+  if (map[rawlocation - mapY - 1] == 0)
+  {
+    pmapy -= 1;
+  }
+}
+
+if (joypad() & J_DOWN)
+{
+  if (map[rawlocation + mapY + 3] == 0)
+  {
+    pmapy += 1;
+  }
+}
+if (joypad() & J_LEFT)
+{
+  if (map[rawlocation] == 0)
+  {
+    pmapx -= 1;
+    dir = 2;
+  }
+}
+
+if (joypad() & J_RIGHT)
+{
+  if (map[rawlocation + 2] == 0)
+  {
+    pmapx += 1;
+    dir = 1;
+  }
+}
+
+void loadtemplateworld()
+{
+
+  mapX = 17;
+  mapY = 15;
+  mapS = 8;
+  uint8_t defaultmap[] =
+      {
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  uint8_t i;
+  uint8_t e = mapX * mapY;
+  for (i = 0; i < e; i++)
+  {
+    map[i] = defaultmap[i];
+  }
+}
+
+if (get_bkg_tile_xy(x, y) != 0)
+{
+  if (get_bkg_tile_xy(x, y - 1) == 0) // checks the block above, and if it's air, it will fill the selected block in with what ever block is in the blockcashe.
+  {
+    set_bkg_tile_xy(x, y - 1, blockcache);
+    map[location - mapY] = blockcache;
+  }
+  if (get_bkg_tile_xy(x, y + 1) == 0) // checks the block under, and if it's air, it will fill the selected block in with what ever block is in the blockcashe.
+  {
+    set_bkg_tile_xy(x, y + 1, blockcache);
+    map[location + mapY] = blockcache;
+  }
+}
+
+else if (map[y * mapX + x] == 4)
+{
+  set_bkg_tile_xy(x, y, 4);
+}
+else if (map[y * mapX + x] == 11)
+{
+  set_bkg_tile_xy(x, y, 11);
+}
+else
+{
+  if (y >= 10)
+  {
+    set_bkg_tile_xy(x, y, 3);
+  }
+  else
+  {
+    set_bkg_tile_xy(x, y, 0);
+  }
+}
+
+void genworld()
+{
+  initarand(sys_time * 123);
+  mapX = 20;
+  mapY = 18;
+  uint8_t x, y;
+  // uint8_t location;
+  uint8_t ran;
+
+  for (y = 0; y < mapY; y++)
+  {
+    for (x = 0; x < mapX; x++)
+    {
+      if (y >= 11)
+      {
+
+        if (y >= 15)
+        {
+          placeblock(x, y, STONE);
+        }
+        else if (y >= 12)
+        {
+          placeblock(x, y, DIRT);
+        }
+        else
+        {
+          ran = arand() % 3;
+          placeblock(x, y - ran, DIRT);
+        }
+      }
+    }
+  }
+
+  uint8_t i = 0;
+  x = 0;
+  y = 0;
+  for (i = 0; i < 3; i++)
+  {
+    for (y = 0; y < mapY; y++)
+    {
+      for (x = 0; x < mapX; x++)
+      {
+        // location = y * mapX + x;
+        // blockcache = map[location];
+
+        if (getblock(x, y, TILEID) == DIRT) // checks if selected block is dirt (dirt is changed to grass AFTER generation)
+        {
+          if (getblock(x, y + 1, TILEID) == AIR) // checks block under for air, if there is air, it will fill it in with dirt
+          {
+            // blockcache = map[location];
+            placeblock(x, y + 1, DIRT);
+          }
+        }
+      }
+    }
+  }
+}
+
+void genworld()
+{
+  initarand(sys_time * 123);
+  mapX = 20;
+  mapY = 18;
+  // uint8_t location;
+  uint8_t ran;
+  uint8_t i;
+  uint8_t noise[20] =
+      {
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+  for (i = 0; i < mapX; i += 5)
+  {
+    ran = randomInRange(0, 5);
+    noise[i] = ran;
+  }
+  uint8_t t;
+  for (t = 0; t < mapX; t += 5)
+  {
+    if (noise[t - 5] > noise[t]) // if the last noise is greater than the current noise, continue
+    {
+      for (i = t; i < t + 4; i++) // decrements then next 4 values
+      {
+        noise[i]--;
+      }
+    }
+    else if (noise[t - 5] < noise[t]) // if the last noise is less than the current noise, continue
+    {
+      for (i = t; i < t + 4; i++) // increments then next 4 values
+      {
+        noise[i]++;
+      }
+    }
+    else
+    {
+      for (i = t; i < t + 4; i++) // decrements then next 4 values
+      {
+        noise[i]++;
+      }
+    }
+  }
+  for (y = 0; y < mapY; y++)
+  {
+    for (x = 0; x < mapX; x++)
+    {
+      if (y >= 12)
+      {
+
+        if (y >= 15)
+        {
+          placeblock(x, y - noise[x], STONE);
+        }
+        else
+        {
+
+          placeblock(x, y - noise[x], DIRT);
+        }
+      }
+    }
+  }
+}

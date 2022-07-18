@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "font.h": "c",
+        "math.h": "c",
+        "RAYCASTE.C": "cpp",
+        "types.h": "c",
+        "gb.h": "c"
+    }
+}
