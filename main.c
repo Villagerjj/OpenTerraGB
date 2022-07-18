@@ -127,7 +127,7 @@ for (uint8_t y = 0; y < mapY; y++) {
 }
 
 void zeroworld() {
-  for (uint16_t i = 0; i < (mapX * mapY); i++) {
+  for (uint32_t i = 0; i < (mapX * mapY); i++) {
     map[i] = 0;
   }
 }
@@ -171,11 +171,20 @@ void genworld()
   initarand(sys_time);
   uint8_t noise[mapX] = {0};
   uint8_t level = randomInRange(0,3);
-  #define maxterhi 15
+  uint8_t maxterhi;
+  if(pmapy>16)
+  {
+   maxterhi = 2;
+  }
+  else
+  {
+   maxterhi = 10;
+  }
+  
   #define minterhi 0
 //randomInRange(10,20);
 
-  for(uint16_t i = 0; i < mapX; i++) {
+  for(uint32_t i = 0; i < mapX; i++) {
     if(randomPercent(25)==TRUE && level != maxterhi) {
         level += 1;
         noise[i] = level;
@@ -195,19 +204,19 @@ void genworld()
   
   for (uint8_t y = 0; y < mapY; y++) {
     for (uint16_t x = 0; x < mapX; x++) {
-      if (y >= 20) {
+      if (y >= 10) {
         setblock(x, y - noise[x], DIRT);
       }
-      if (y >= 25) {
+      if (y >= 13) {
         setblock(x, y - noise[x] , STONE);
       } 
 
 
     }
   }
-  /*
-  for (y = 0; y < mapY; y++) {
-      for (x = 0; x < mapX; x++) {
+
+  for (uint16_t y = 0; y < mapY; y++) {
+      for (uint8_t x = 0; x < mapX; x++) {
         if(getblock(x,y, ARRAYID)==STONE) 
         {
           if(getblock(x+1,y, ARRAYID)==AIR)
@@ -220,7 +229,7 @@ void genworld()
           }
         }
       }
-    } */
+    } 
 }
 
 void init() {
