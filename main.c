@@ -24,8 +24,8 @@ extern uint8_t map[8192]; //(mapx * map y)
 //512x16 = 8192
   //512x192 = 98304 blocks
 
-uint16_t pmapx; // player x position in the map
-uint8_t pmapy; // player y position in the map
+uint16_t pmapx = 10; // player x position in the map
+uint8_t pmapy = 8; // player y position in the map
 uint32_t blocklocation;
 uint32_t location;
 uint8_t noise[mapX];
@@ -35,21 +35,15 @@ uint16_t cx, camx;
 uint8_t cy, camy;
 
 
-void placeblock(uint8_t x, uint8_t y, uint8_t blockID) //puts the block into the world only
+void placeblock(uint8_t x, uint8_t y, uint8_t blockID) //places a block in both SRAM and the world
 {
-    //map[y * mapX + x] = blockID;
+    map[y * mapX + x] = blockID;
     set_bkg_tile_xy(x, y, blockID);
 }
 
 void setblock(uint8_t x, uint8_t y, uint8_t blockID) //puts the block into SRAM only
 {
     map[y * mapX + x] = blockID;
-}
-
-void placeblockp(uint8_t x, uint8_t y, uint8_t blockID) //places a block in both SRAM and the world
-{
-    map[y * mapX + x] = blockID;
-    set_bkg_tile_xy(x, y, blockID);
 }
 
 void loadblock(uint8_t x, uint8_t y) //loads the block from SRAM and then places it into the world
@@ -77,7 +71,7 @@ void drawworld() {
       camx = cx + x;
       
 
-    placeblock(x, y, map[location]); //loads the block at the selected cordinates in the array onto the screen.
+    set_bkg_tile_xy(x, y, map[location]); //loads the block at the selected cordinates in the array onto the screen.
       /*
       0 - air
       1 - grassblock
@@ -104,7 +98,7 @@ void clearworld()
 {
   for (uint8_t y = 0; y < 30; y++) {
     for (uint16_t x = 0; x < 30; x++) {
-      placeblock(x,y,0);
+      set_bkg_tile_xy(x,y,0);
     }
   }
 }
@@ -121,7 +115,7 @@ for (uint8_t y = 0; y < mapY; y++) {
 }
 
 void zeroworld() {
-  for (uint32_t i = 0; i < (mapX * mapY); i++) {
+  for (uint16_t i = 0; i < (mapX * mapY); i++) {
     map[i] = 0;
   }
 }
@@ -160,103 +154,117 @@ void dogravity() { //update for new camera system
   
 }
 
+
 void genworld() 
 {
   initarand(sys_time);
   uint8_t noise[mapX];
-  uint8_t level;
-  uint8_t maxterhi;
-
-
-
-      level = 0;
-      maxterhi = 8;
-  
-
+  uint8_t level = 0;
+  #define maxterhi 4
   #define minterhi 0
-  #define floor 0 //can only be 0
-//randomInRange(10,20);
 
-  for(uint32_t i = 0; i < mapX; i++) {
+for(uint16_t i = 0; i < mapX; i++) 
+{
+  noise[i] = 0;
+}
 
-    if(randomPercent(20)==TRUE) {
-        level += 1;
-        noise[i] = level;
+  for(uint16_t i = 0; i < mapX; i++) {
 
-    } else if (randomPercent(5)==TRUE) {
-        level += 2;
-        noise[i] = level;
+    
+
+    if(randomPercent(30)==TRUE) 
+    {
+      level += 1;
+    } else if (randomPercent(5)==TRUE) 
+    {
+      level += 2;
     }
-    else if(randomPercent(40)==TRUE) {
-        level -= 1;
-        noise[i] = level;
-    } else if (randomPercent(5)==TRUE) {
-        level -= 2;
-        noise[i] = level;
-    } else {
-        
-          noise[i]=noise[i-1];
+    else if(randomPercent(30)==TRUE) 
+    {
+      level -= 1;
+    } else if (randomPercent(5)==TRUE) 
+    {
+      level -= 2;
+    } else 
+    { 
+      noise[i]=noise[i-1];
+      goto SKIP0;
     }
-
+    noise[i] = level;
+SKIP0:
     if (level >= maxterhi) {
     
       level = maxterhi;
-       noise[i] = level;
-      
-    } else if (level <= minterhi) {
+      noise[i] = level;
+      goto SKIP1;
+    }
+    if (level <= minterhi) {
     
       level = minterhi;
-       noise[i] = level;
+      noise[i] = level;
       
     }
-}
-  
-  for (uint8_t y = 0; y < mapY; y++) {
-    for (uint16_t x = 0; x < mapX; x++) {
-      
-      if (y >= 12) {
-
-          setblock(x, y - noise[x], DIRT);
-          if (getblock(x, y - noise[x] - 1, ARRAYID) == AIR) // checks above block to see if it is NOT air, and if there is air, turn into grass
-          { 
-          setblock(x, y - noise[x], GRASS);
-          }
-        
-      }
-      if (y >= 14) {
-        
-          setblock(x, y - noise[x] , STONE);
-        
-      }
     
-    }
+    SKIP1:
   }
+
+for (uint8_t y = 0; y < mapY; y++) {
+  for (uint16_t x = 0; x < mapX; x++) 
+  {
+      //setblock(x, y - noise[x], AIR);
+    if(y <= 12)
+    {
+      goto SKIP2;
+    }
+
+
+    if (y >= 15) 
+    {  
+      setblock(x, y - noise[x], STONE);
+      goto SKIP2;
+    }
+
+    setblock(x, y - noise[x], DIRT);
+
+    if (getblock(x, (y - noise[x]) - 1, ARRAYID) == AIR) // checks above block to see if it is air, and if there is air, turn into grass
+    { 
+      setblock(x, y - noise[x], GRASS);
+    }
+
+    SKIP2:
+    
+    
+    
+  }
+  
+}
 
   for (uint16_t y = 0; y < mapY; y++) {
       for (uint16_t x = 0; x < mapX; x++) {
         if(getblock(x,y, ARRAYID)==STONE) 
         {
-          if(getblock(x,y+1, ARRAYID)==AIR && y+1 != mapY)
+          if(y+1 != mapY && getblock(x,y+1, ARRAYID)==AIR)
           {
               setblock(x,y+1,STONE);
           }
         }
       }
     } 
+
+   
 }
 
 void init() {
   zeroworld();
   clearworld();
   genworld();
-  pmapx = 10;
-  pmapy = 8;
   blocklocation = pmapy * mapX + pmapx+1;
   dirx = pmapx + 1;
   set_bkg_data(0, 16, blocks);
   set_sprite_data(0, 7, player);
   set_sprite_tile(0, 6);
-
+  scroll_bkg(8,8);
+  move_sprite(0, 80, 72);
 }
 
     
@@ -265,17 +273,11 @@ void init() {
 
 void main(void) {
   ENABLE_RAM;
-  
-  
-  scroll_bkg(8,8);
-  move_sprite(0, 80, 72);
-  init();
-  
-  //drawPlayer();
   SHOW_SPRITES;
   SHOW_BKG;
+  init();
   drawworld();
-  display();
+  //display();
   blockcache = 4;
     
   //uint16_t offset = ((mapX * 3) - mapY);
@@ -312,7 +314,7 @@ void main(void) {
         }
         else
         {
-        blockcache = 1;
+        blockcache = 0;
         }
       
     }
