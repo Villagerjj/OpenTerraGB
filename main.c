@@ -46,7 +46,7 @@ void setblock(uint8_t x, uint8_t y, uint8_t blockID) //puts the block into SRAM 
     map[y * mapX + x] = blockID;
 }
 
-void placeblockp(uint8_t x, uint8_t y, uint8_t blockID) //places a blcok in both SRAM and the world
+void placeblockp(uint8_t x, uint8_t y, uint8_t blockID) //places a block in both SRAM and the world
 {
     map[y * mapX + x] = blockID;
     set_bkg_tile_xy(x, y, blockID);
@@ -75,13 +75,7 @@ void drawworld() {
     for (uint16_t x = 0; x < Vmapx; x++) {
       location = ((cy+y) * mapX + (cx + x));
       camx = cx + x;
-      if (getblock(camx,camy,ARRAYID) == DIRT) {
-        if (getblock(camx, camy - 1, ARRAYID) == AIR) // checks above block to see if it is NOT air, and if there is air, turn into grass
-        { 
-          setblock(camx, camy, GRASS);
-        } 
-
-      }
+      
 
     placeblock(x, y, map[location]); //loads the block at the selected cordinates in the array onto the screen.
       /*
@@ -169,61 +163,80 @@ void dogravity() { //update for new camera system
 void genworld() 
 {
   initarand(sys_time);
-  uint8_t noise[mapX] = {0};
-  uint8_t level = randomInRange(0,3);
+  uint8_t noise[mapX];
+  uint8_t level;
   uint8_t maxterhi;
-  if(pmapy>16)
-  {
-   maxterhi = 2;
-  }
-  else
-  {
-   maxterhi = 10;
-  }
+
+
+
+      level = 0;
+      maxterhi = 8;
   
+
   #define minterhi 0
+  #define floor 0 //can only be 0
 //randomInRange(10,20);
 
   for(uint32_t i = 0; i < mapX; i++) {
-    if(randomPercent(25)==TRUE && level != maxterhi) {
+
+    if(randomPercent(20)==TRUE) {
         level += 1;
         noise[i] = level;
-    } else if (randomPercent(5)==TRUE && level != maxterhi) {
+
+    } else if (randomPercent(5)==TRUE) {
         level += 2;
         noise[i] = level;
-    } else if(randomPercent(35)==TRUE && level != minterhi) {
+    }
+    else if(randomPercent(40)==TRUE) {
         level -= 1;
         noise[i] = level;
-    } else if (randomPercent(5)==TRUE && level != minterhi) {
+    } else if (randomPercent(5)==TRUE) {
         level -= 2;
         noise[i] = level;
     } else {
-        noise[i]=noise[i-1];
+        
+          noise[i]=noise[i-1];
     }
-  }
+
+    if (level >= maxterhi) {
+    
+      level = maxterhi;
+       noise[i] = level;
+      
+    } else if (level <= minterhi) {
+    
+      level = minterhi;
+       noise[i] = level;
+      
+    }
+}
   
   for (uint8_t y = 0; y < mapY; y++) {
     for (uint16_t x = 0; x < mapX; x++) {
-      if (y >= 10) {
-        setblock(x, y - noise[x], DIRT);
+      
+      if (y >= 12) {
+
+          setblock(x, y - noise[x], DIRT);
+          if (getblock(x, y - noise[x] - 1, ARRAYID) == AIR) // checks above block to see if it is NOT air, and if there is air, turn into grass
+          { 
+          setblock(x, y - noise[x], GRASS);
+          }
+        
       }
-      if (y >= 13) {
-        setblock(x, y - noise[x] , STONE);
-      } 
-
-
+      if (y >= 14) {
+        
+          setblock(x, y - noise[x] , STONE);
+        
+      }
+    
     }
   }
 
   for (uint16_t y = 0; y < mapY; y++) {
-      for (uint8_t x = 0; x < mapX; x++) {
+      for (uint16_t x = 0; x < mapX; x++) {
         if(getblock(x,y, ARRAYID)==STONE) 
         {
-          if(getblock(x+1,y, ARRAYID)==AIR)
-          {
-              setblock(x+1,y,STONE);
-          }
-          if(getblock(x,y+1, ARRAYID)==AIR)
+          if(getblock(x,y+1, ARRAYID)==AIR && y+1 != mapY)
           {
               setblock(x,y+1,STONE);
           }
@@ -233,14 +246,16 @@ void genworld()
 }
 
 void init() {
-  clearworld();
   zeroworld();
+  clearworld();
   genworld();
   pmapx = 10;
   pmapy = 8;
   blocklocation = pmapy * mapX + pmapx+1;
   dirx = pmapx + 1;
-  
+  set_bkg_data(0, 16, blocks);
+  set_sprite_data(0, 7, player);
+  set_sprite_tile(0, 6);
 
 }
 
@@ -255,9 +270,7 @@ void main(void) {
   scroll_bkg(8,8);
   move_sprite(0, 80, 72);
   init();
-  set_bkg_data(0, 16, blocks);
-  set_sprite_data(0, 7, player);
-  set_sprite_tile(0, 6);
+  
   //drawPlayer();
   SHOW_SPRITES;
   SHOW_BKG;
@@ -275,8 +288,8 @@ void main(void) {
       if (getblock(dirx, pmapy, ARRAYID) == 0) //checks the block to the right, and if it's air, it will fill the selected block in with what ever block is in the blockcashe.
           {
             setblock(dirx, pmapy, blockcache);
-            if (getblock(dirx, pmapy-1, ARRAYID) == GRASS) {
-                setblock(dirx, pmapy-1, DIRT);
+            if (getblock(dirx, pmapy+1, ARRAYID) == GRASS) {
+                setblock(dirx, pmapy+1, DIRT);
             }
             display();
           }
@@ -285,8 +298,8 @@ void main(void) {
     if (joypad() & J_B) {
       if (getblock(dirx, pmapy, ARRAYID) != 0) {
         setblock(dirx, pmapy, 0);
-        if (getblock(dirx, pmapy-1, ARRAYID) == DIRT) {
-                setblock(dirx, pmapy-1, GRASS);
+        if (getblock(dirx, pmapy+1, ARRAYID) == DIRT) {
+                setblock(dirx, pmapy+1, GRASS);
             }
         display();
       }
@@ -305,8 +318,8 @@ void main(void) {
     }
     if (joypad() & J_START) {
         
-        clearworld();
         zeroworld();
+        clearworld();
         genworld();
         display();
           
