@@ -10,6 +10,7 @@
 #include "worldtiles.h"
 #include "player.h"
 #include "itemIDs.h"
+#include "bankLUT.h"
 
 #define SCREEN_WIDTH 22
 #define SCREEN_HEIGHT 20
@@ -56,7 +57,7 @@ void drawBlock(uint16_t x, uint8_t y, uint8_t blockID)
 // Places a block into SRAM only.
 void setBlock(uint16_t x, uint8_t y, uint8_t blockID)
 {
-  SWITCH_RAM(y / 12);
+  SWITCH_RAM(yBankLUT[y]);
   map[(y % 16) * MAP_WIDTH + x] = blockID;
 }
 
@@ -68,7 +69,7 @@ uint8_t getBlockOLD(uint16_t x, uint8_t y)
 
 uint8_t getBlock(uint16_t x, uint8_t y)
 {
-  SWITCH_RAM(y / 12);    
+  SWITCH_RAM(yBankLUT[y]);    
   return map[(y % 16) * MAP_WIDTH + x];
 }
 
