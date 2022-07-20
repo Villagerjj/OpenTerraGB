@@ -13,15 +13,25 @@
 
 #define SCREEN_WIDTH 22
 #define SCREEN_HEIGHT 20
+#define CACHE_WIDTH 32 // how may tiles in the X direction to cache into VRAM
+#define CACHE_HEIGHT 32
 #define TILE_SIZE 8 // Size of a tile in pixels.
 #define MAP_WIDTH 512
-#define MAP_HEIGHT 16
+#define MAP_HEIGHT 192
+#define MAP_CHUNK_HEIGHT 16
+#define CAM_JUMP_X 6 // the amount in the X value for the camera to jump too when loading stuff into VRAM
+#define CAM_JUMP_Y 6 // the amount in the Y value for the camera to jump too when loading stuff into VRAM
+#define CAM_JUMPBY_X 4 // the amount in the X value for the camera to jump too when loading stuff into VRAM
+#define CAM_JUMPBY_Y 4 // the amount in the Y value for the camera to jump too when loading stuff into VRAM
+#define MAX_DELAY 100 // the delay used when just scrolling
+#define MIN_DELAY 10 // the delay used when writing to VRAM
+#define VRAM_BORDER 12 // (CAM_JUMP_X + CAM_JUMPBY_X) the X/Y value Camera.Ox/Oy need to be at or above to trigger a refresh of VRAM  
 
 // The map is actually 12 times larger than this; it is split up across 12 SRAM
 // banks into 16 tile tall rows.
 extern uint8_t map[8192];
 uint16_t location;
-
+bool jump;
 // Generic structure for entities, such as the player, NPCs, or enemies.
 typedef struct entity
 {
@@ -35,6 +45,8 @@ struct
 {
   uint16_t x;
   uint8_t y;
+  uint16_t Ox;
+  uint8_t Oy;
 } camera;
 
 // Places a block into VRAM only.
@@ -46,21 +58,23 @@ void drawBlock(uint16_t x, uint8_t y, uint8_t blockID)
 // Places a block into SRAM only.
 void setBlock(uint16_t x, uint8_t y, uint8_t blockID)
 {
-  map[y * MAP_WIDTH + x] = blockID;
-}
-
-// Places a block in both SRAM and VRAM.
-void placeBlock(uint16_t x, uint8_t y, uint8_t blockID)
-{
-  map[y * MAP_WIDTH + x] = blockID;
-  set_bkg_tile_xy(x, y, blockID);
+  SWITCH_ROM_MBC5(y / 12);
+  map[(y % 16) * MAP_WIDTH + x] = blockID;
 }
 
 // gets block from SRAM
-uint8_t getBlock(uint16_t x, uint8_t y)
+uint8_t getBlockOLD(uint16_t x, uint8_t y)
 {
   return map[y * MAP_WIDTH + x];
 }
+
+uint8_t getBlock(uint16_t x, uint8_t y)
+{
+  SWITCH_ROM_MBC5(y / 12);    
+  return map[(y % 16) * MAP_WIDTH + x];
+}
+
+
 
 // loads the block from SRAM and then places it into the world
 void loadblock(uint16_t x, uint8_t y)
@@ -154,7 +168,7 @@ void generateWorld()
       goto SKIP1;
     }
     if (level <= minterhi)
-    { 
+    {
 
       level = minterhi;
       noise[i] = level;
@@ -206,6 +220,10 @@ void init()
   generateWorld();
   player.x = 10;
   player.y = 8;
+  camera.x = CAM_JUMP_X;
+  camera.y = CAM_JUMP_Y;
+  camera.Ox = CAM_JUMP_X;
+  camera.Oy = CAM_JUMP_Y;
 }
 
 void main(void)
@@ -220,12 +238,10 @@ void main(void)
   uint16_t facingX = player.x + 1;
   SHOW_SPRITES;
   SHOW_BKG;
-  drawWorld();
+  //drawWorld();
   display();
   // The player's selected block.
   uint8_t selectedBlock = 4;
-  // The X position that the player is facing
-  
 
   while (1)
   {
@@ -244,7 +260,6 @@ void main(void)
         {
           setBlock(facingX, player.y + 1, DIRT);
         }
-        
       }
     }
 
@@ -257,7 +272,6 @@ void main(void)
         {
           setBlock(facingX, player.y + 1, GRASS);
         }
-       
       }
     }
 
@@ -277,21 +291,20 @@ void main(void)
     if (cur_keys & J_START)
     {
       init();
-      
     }
 
     if (cur_keys & J_UP)
     {
-      // scroll_bkg(0,-8);
+
       camera.y -= 1;
-      player.y -= 1;
+      player.y -= 1; 
       
-    } 
+    }
     else if (cur_keys & J_DOWN)
     {
       // scroll_bkg(0,8);
       camera.y += 1;
-      player.y += 1;
+      player.y += 1; 
       
     }
 
@@ -300,23 +313,29 @@ void main(void)
       player.x -= 1;
       facingX = player.x - 1;
       set_sprite_prop(0, S_FLIPX);
-      camera.x -= 1;
+      camera.x -= 1; 
+
       
-    } 
+    }
     else if (cur_keys & J_RIGHT)
     {
       player.x += 1;
       facingX = player.x + 1;
       set_sprite_prop(0, 0);
       camera.x += 1;
-     
+      
     }
 
     // If any buttons are pressed, redraw the world.
     if (cur_keys) {
 			display();
 		}
+    
+    
+    
+    
 
+    //
     wait_vbl_done();
   }
 }
