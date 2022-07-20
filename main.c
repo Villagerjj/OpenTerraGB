@@ -26,40 +26,40 @@ extern uint8_t map[Blocks]; //(mapx * map y)
   //512x192 = 98304 blocks
 
 uint16_t pmapx = 10; // player x position in the map
-uint8_t pmapy = 8; // player y position in the map
+uint16_t pmapy = 8; // player y position in the map
 uint16_t blocklocation;
 uint16_t location;
 uint8_t noise[mapX];
 uint16_t dirx;
 uint8_t blockcache = 4;
 uint16_t cx, camx;
-uint8_t cy, camy;
+uint16_t cy, camy;
 
 
-void placeblock(uint8_t x, uint8_t y, uint8_t blockID) //places a block in both SRAM and the world - not needed with current camera setup.
+void placeblock(uint16_t x, uint8_t y, uint8_t blockID) //places a block in both SRAM and the world - not needed with current camera setup.
 {
     map[y * mapX + x] = blockID;
     set_bkg_tile_xy(x, y, blockID);
 }
 
-void setblock(uint8_t x, uint8_t y, uint8_t blockID) //puts the block into SRAM only
+void setblock(uint16_t x, uint8_t y, uint8_t blockID) //puts the block into SRAM only
 {
     map[y * mapX + x] = blockID;
 }
 
-void loadblock(uint8_t x, uint8_t y) //loads the block from SRAM and then places it into the world
+void loadblock(uint16_t x, uint8_t y) //loads the block from SRAM and then places it into the world
 {
     set_bkg_tile_xy(x, y, map[y * mapX + x]);
 }
 
-uint16_t getblock(uint8_t x, uint8_t y) //gets the block at the specified cordinates from SRAM - Slower, less calculation needed to find the propper tile.
+uint16_t getblock(uint16_t x, uint8_t y) //gets the block at the specified cordinates from SRAM - Slower, less calculation needed to find the propper tile.
 {
     
     return map[y * mapX + x];
     
 }
 
-uint16_t getblockVRAM(uint8_t x, uint8_t y) //gets the block at the specified cordinates from VRAM with camera offsets - Much faster, but could cause errors
+uint16_t getblockVRAM(uint16_t x, uint8_t y) //gets the block at the specified cordinates from VRAM with camera offsets - Much faster, but could cause errors
 {
     camy = cy + y;
     camx = cx + x;
