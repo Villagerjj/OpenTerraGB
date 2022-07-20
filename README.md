@@ -1,4 +1,4 @@
-# TerrariaGB
+# OpenTerraGB
  A Terraria Clone for the gameboy!
 
 
