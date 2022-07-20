@@ -17,7 +17,7 @@
 #define CACHE_HEIGHT 32
 #define TILE_SIZE 8 // Size of a tile in pixels.
 #define MAP_WIDTH 512
-#define MAP_HEIGHT 32
+#define MAP_HEIGHT 192
 #define MAP_CHUNK_HEIGHT 16
 #define CAM_JUMP_X 6 // the amount in the X value for the camera to jump too when loading stuff into VRAM
 #define CAM_JUMP_Y 6 // the amount in the Y value for the camera to jump too when loading stuff into VRAM
@@ -56,7 +56,7 @@ void drawBlock(uint16_t x, uint8_t y, uint8_t blockID)
 // Places a block into SRAM only.
 void setBlock(uint16_t x, uint8_t y, uint8_t blockID)
 {
-  SWITCH_ROM_MBC5(y / 12);
+  SWITCH_RAM(y / 12);
   map[(y % 16) * MAP_WIDTH + x] = blockID;
 }
 
@@ -68,7 +68,7 @@ uint8_t getBlockOLD(uint16_t x, uint8_t y)
 
 uint8_t getBlock(uint16_t x, uint8_t y)
 {
-  SWITCH_ROM_MBC5(y / 12);    
+  SWITCH_RAM(y / 12);    
   return map[(y % 16) * MAP_WIDTH + x];
 }
 
@@ -177,12 +177,20 @@ void generateWorld()
     for (uint16_t x = 0; x < MAP_WIDTH; x++)
     {
       // setBlock(x, y - noise[x], AIR);
-      if (y <= 12)
+      if (y <= 16)
       {
         goto SKIP2;
       }
 
-      setBlock(x, y - noise[x], DIRT);
+      if (y >= 19)
+      {
+        setBlock(x, y - noise[x], STONE);
+      }
+      else
+      {
+        setBlock(x, y - noise[x], DIRT);
+      }
+      
       // setBlock(x, (y - noise[x]) + 1, STONE);
 
       if (getBlock(x, (y - noise[x]) - 1) == AIR && getBlock(x, (y - noise[x]) - 2) == AIR) // checks the above 2 blocks for air, and if there is air, turn into grass
