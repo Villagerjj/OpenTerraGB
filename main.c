@@ -108,11 +108,7 @@ void clearVRAM()
 }
 
 
-void zeroworld() {
-  for (uint16_t i = 0; i < Blocks; i++) {
-    map[i] = 0;
-  }
-}
+
 
 
 
@@ -279,7 +275,7 @@ void genworld()
 }
 
 void init() {
-  zeroworld();
+  memset(map, 0, sizeof(map));
   clearVRAM();
   genworld();
   blocklocation = pmapy * mapX + pmapx+1;
@@ -344,7 +340,7 @@ void main(void) {
     }
     if (joypad() & J_START) {
         
-        zeroworld();
+        memset(map, 0, sizeof(map)); //zeros world 
         clearVRAM();
         genworld();
         display();
