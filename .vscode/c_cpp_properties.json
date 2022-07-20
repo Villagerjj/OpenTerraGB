@@ -4,6 +4,7 @@
             "name": "GBDK 2020",
             "includePath": [
                 "${workspaceFolder}/**",
+                "${workspaceFolder}/src/include/**",
                 "C:/gbdk/include/**"
             ],
             "defines": [

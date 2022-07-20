@@ -4,6 +4,7 @@
         "math.h": "c",
         "RAYCASTE.C": "cpp",
         "types.h": "c",
-        "gb.h": "c"
+        "gb.h": "c",
+        "player.h": "c"
     }
 }

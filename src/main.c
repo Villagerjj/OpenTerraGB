@@ -7,9 +7,9 @@
 #include <string.h>
 #include <rand.h>
 #include <types.h>
-#include "include/worldtiles.h"
-#include "include/player.h"
-#include "include/itemIDs.h"
+#include "worldtiles.h"
+#include "player.h"
+#include "itemIDs.h"
 
 #define SCREEN_WIDTH 22
 #define SCREEN_HEIGHT 20
@@ -17,7 +17,7 @@
 #define CACHE_HEIGHT 32
 #define TILE_SIZE 8 // Size of a tile in pixels.
 #define MAP_WIDTH 512
-#define MAP_HEIGHT 16
+#define MAP_HEIGHT 32
 #define MAP_CHUNK_HEIGHT 16
 #define CAM_JUMP_X 6 // the amount in the X value for the camera to jump too when loading stuff into VRAM
 #define CAM_JUMP_Y 6 // the amount in the Y value for the camera to jump too when loading stuff into VRAM
@@ -30,7 +30,6 @@
 // The map is actually 12 times larger than this; it is split up across 12 SRAM
 // banks into 16 tile tall rows.
 extern uint8_t map[8192];
-bool jump;
 // Generic structure for entities, such as the player, NPCs, or enemies.
 typedef struct entity
 {

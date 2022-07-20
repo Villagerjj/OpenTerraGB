@@ -10,7 +10,7 @@ ROMSIZE := 4
 SRAMSIZE := 16
 VERSION := 0
 
-INCDIRS  = src/ src/include/
+INCDIRS  = src\ src\include\
 WARNINGS = 
 
 CFLAGS  = $(addprefix -I, $(INCDIRS)) $(addprefix -W, $(WARNINGS))
