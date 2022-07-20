@@ -7,8 +7,8 @@
 #include <string.h>
 #include <rand.h>
 #include <types.h>
-#include "worldtiles.c"
-#include "player.c"
+#include "worldtiles.h"
+#include "player.h"
 #include "itemIDs.h"
 
 #define SCREEN_WIDTH 22
@@ -17,7 +17,7 @@
 #define CACHE_HEIGHT 32
 #define TILE_SIZE 8 // Size of a tile in pixels.
 #define MAP_WIDTH 512
-#define MAP_HEIGHT 192
+#define MAP_HEIGHT 16
 #define MAP_CHUNK_HEIGHT 16
 #define CAM_JUMP_X 6 // the amount in the X value for the camera to jump too when loading stuff into VRAM
 #define CAM_JUMP_Y 6 // the amount in the Y value for the camera to jump too when loading stuff into VRAM
@@ -30,7 +30,6 @@
 // The map is actually 12 times larger than this; it is split up across 12 SRAM
 // banks into 16 tile tall rows.
 extern uint8_t map[8192];
-uint16_t location;
 bool jump;
 // Generic structure for entities, such as the player, NPCs, or enemies.
 typedef struct entity
@@ -74,8 +73,6 @@ uint8_t getBlock(uint16_t x, uint8_t y)
   return map[(y % 16) * MAP_WIDTH + x];
 }
 
-
-
 // loads the block from SRAM and then places it into the world
 void loadblock(uint16_t x, uint8_t y)
 {
@@ -88,8 +85,7 @@ void drawWorld()
   {
     for (uint16_t x = 0; x < SCREEN_WIDTH; x++)
     {
-      location = ((camera.y + y) * MAP_WIDTH + (camera.x + x));
-      set_bkg_tile_xy(x, y, map[location]);
+      set_bkg_tile_xy(x, y, getBlock(camera.x + x, camera.y + y));
     }
   }
 }
