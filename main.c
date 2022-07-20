@@ -107,16 +107,6 @@ void clearVRAM()
   }
 }
 
-void forcesave() //attempts to write to RAM, idk if it will worl
-{
-for (uint8_t y = 0; y < mapY; y++) {
-    for (uint16_t x = 0; x < mapX; x++) {
-      
-      map[y * mapX + x]=getblock(x,y);
-
-    }
-  }
-}
 
 void zeroworld() {
   for (uint16_t i = 0; i < Blocks; i++) {
