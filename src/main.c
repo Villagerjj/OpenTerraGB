@@ -7,9 +7,9 @@
 #include <string.h>
 #include <rand.h>
 #include <types.h>
-#include "worldtiles.h"
-#include "player.h"
-#include "itemIDs.h"
+#include "include/worldtiles.h"
+#include "include/player.h"
+#include "include/itemIDs.h"
 
 #define SCREEN_WIDTH 22
 #define SCREEN_HEIGHT 20
