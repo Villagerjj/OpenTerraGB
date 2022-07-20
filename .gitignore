@@ -8,7 +8,5 @@
 *.gbr
 *.sav
 *.txt
-Export.c
-Export.h
-oldmain.c
-newmain.c
+bin/*
+obj/*
