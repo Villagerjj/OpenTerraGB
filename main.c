@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <rand.h>
 #include <types.h>
 #include "worldtiles.c"
@@ -153,7 +154,7 @@ void generateWorld()
       goto SKIP1;
     }
     if (level <= minterhi)
-    {
+    { 
 
       level = minterhi;
       noise[i] = level;
@@ -201,7 +202,7 @@ void generateWorld()
 
 void init()
 {
-  //memset(map, 0, sizeof(map));
+  memset(map, 0, sizeof(map));
   generateWorld();
   player.x = 10;
   player.y = 8;
