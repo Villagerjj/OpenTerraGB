@@ -7,8 +7,11 @@ An open source version clone of Terraria built with GBDK!
 
 ## Console Support
 
-OpenTerraGB currently only supports the Nintendo Gameboy, but in the future it might support other consoles
+OpenTerraGB currently only supports the Nintendo Gameboy, but in the future it might support other consoles like
 
+- NES
+- Sega Master System
+- MSX
 
 ## FAQ
 
