@@ -24,8 +24,8 @@
 
 
 /* Bank of tiles. */
-#define playerBank 0
+#define playertilesBank 0
 /* Start of tile array. */
-extern unsigned char player[];
+extern unsigned char playertiles[];
 
 /* End of PLAYER.H */

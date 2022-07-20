@@ -1,414 +1,321 @@
-#include <gb/gb.h>
 #include <gb/cgb.h>
-#include <stdint.h>
 #include <gb/drawing.h>
+#include <gb/gb.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <rand.h>
 #include <types.h>
 #include "worldtiles.c"
 #include "player.c"
 #include "itemIDs.h"
-#define Vmapx 22 //the view port X value
-#define Vmapy 20 //the max y value
-#define mapS 8 // mapS is the size in pixels, of each box. NEVER CHANGES EVER!!!
-#define mapX 512 //the max x value
-#define mapY 16 //the max y value
-#define Blocks 8192 //the mapX * mapY very useful
 
-extern uint8_t map[Blocks]; //(mapx * map y)
-//544 x 16 = 8704
-//64x64 4096
-//256x16 = 4069
-//128 x 64 8192
-  //this is 2,720, i need 16,384 
-//512x32 = 16,384
-//512x16 = 8192
-  //512x192 = 98304 blocks
+#define SCREEN_WIDTH 22
+#define SCREEN_HEIGHT 20
+#define TILE_SIZE 8 // Size of a tile in pixels.
+#define MAP_WIDTH 512
+#define MAP_HEIGHT 16
 
-uint16_t pmapx = 10; // player x position in the map
-uint16_t pmapy = 8; // player y position in the map
-uint16_t blocklocation;
+// The map is actually 12 times larger than this; it is split up across 12 SRAM
+// banks into 16 tile tall rows.
+extern uint8_t map[8192];
 uint16_t location;
-uint8_t noise[mapX];
-uint16_t dirx;
-uint8_t blockcache = 4;
-uint16_t cx, camx;
-uint16_t cy, camy;
 
-
-void placeblock(uint16_t x, uint8_t y, uint8_t blockID) //places a block in both SRAM and the world - not needed with current camera setup.
+// Generic structure for entities, such as the player, NPCs, or enemies.
+typedef struct entity
 {
-    map[y * mapX + x] = blockID;
-    set_bkg_tile_xy(x, y, blockID);
+  uint16_t x;
+  uint8_t y;
+} entity;
+
+entity player;
+
+struct
+{
+  uint16_t x;
+  uint8_t y;
+} camera;
+
+// Places a block into VRAM only.
+void drawBlock(uint16_t x, uint8_t y, uint8_t blockID)
+{
+  set_bkg_tile_xy(x, y, blockID);
 }
 
-void setblock(uint16_t x, uint8_t y, uint8_t blockID) //puts the block into SRAM only
+// Places a block into SRAM only.
+void setBlock(uint16_t x, uint8_t y, uint8_t blockID)
 {
-    map[y * mapX + x] = blockID;
+  map[y * MAP_WIDTH + x] = blockID;
 }
 
-void loadblock(uint16_t x, uint8_t y) //loads the block from SRAM and then places it into the world
+// Places a block in both SRAM and VRAM.
+void placeBlock(uint16_t x, uint8_t y, uint8_t blockID)
 {
-    set_bkg_tile_xy(x, y, map[y * mapX + x]);
+  map[y * MAP_WIDTH + x] = blockID;
+  set_bkg_tile_xy(x, y, blockID);
 }
 
-uint16_t getblock(uint16_t x, uint8_t y) //gets the block at the specified cordinates from SRAM - Slower, less calculation needed to find the propper tile.
+// gets block from SRAM
+uint8_t getBlock(uint16_t x, uint8_t y)
 {
-    
-    return map[y * mapX + x];
-    
+  return map[y * MAP_WIDTH + x];
 }
 
-uint16_t getblockVRAM(uint16_t x, uint8_t y) //gets the block at the specified cordinates from VRAM with camera offsets - Much faster, but could cause errors
+// loads the block from SRAM and then places it into the world
+void loadblock(uint16_t x, uint8_t y)
 {
-    camy = cy + y;
-    camx = cx + x;
-    return get_bkg_tile_xy(camx,camy);
-    
+  set_bkg_tile_xy(x, y, map[y * MAP_WIDTH + x]);
 }
 
-void drawworld() {
-  for (uint8_t y = 0; y < Vmapy; y++) {
-    camy = cy + y;
-    for (uint16_t x = 0; x < Vmapx; x++) {
-      location = ((cy+y) * mapX + (cx + x));
-      camx = cx + x;
-      
-
-    set_bkg_tile_xy(x, y, map[location]); //loads the block at the selected cordinates in the array onto the screen.
-      /*
-      0 - air
-      1 - grassblock
-      4 - stone
-      11 - treetrunk
-      etc - ids are in itemIDs.h
-      */
-    }
-  }
-}
-/*
-void gametick() {
-  for (y = 0; y < mapY; y++) {
-    for (x = 0; x < mapX; x++) {
-      uint32_t location = ((cy+y) * mapX + (cx + x));
-      camx = cx + x;
-      camy = cy + y;
-      
-    }
-  }
-}*/
-
-void clearVRAM()
+void drawWorld()
 {
-  for (uint8_t y = 0; y < 32; y++) {
-    for (uint16_t x = 0; x < 32; x++) {
-      set_bkg_tile_xy(x,y,0);
+  for (uint8_t y = 0; y < SCREEN_HEIGHT; y++)
+  {
+    for (uint16_t x = 0; x < SCREEN_WIDTH; x++)
+    {
+      location = ((camera.y + y) * MAP_WIDTH + (camera.x + x));
+      set_bkg_tile_xy(x, y, map[location]);
     }
   }
 }
 
-
-
-
-
-
-
-uint16_t randomInRange(uint8_t lower, uint8_t upper)
+uint8_t randomInRange(uint8_t lower, uint8_t upper)
 {
-    
-    uint8_t num = (arand() % (upper - lower + 1)) + lower;
-    return num;
+  return arand() % (upper - lower + 1) + lower;
 }
 
-uint8_t randomPercent(uint8_t chance) //a random chance a thingy will happen
+bool randomPercent(uint8_t chance)
 {
-    uint8_t num = (arand() % (101));
-    if(num<=chance)
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-    
+  if ((arand() % (256)) <= chance)
+  {
+    return TRUE;
+  }
+  else
+  {
+    return FALSE;
+  }
 }
 
-
-void display() {
-  drawworld();
-  //draw entities
-}
-
-void dogravity() { //update for new camera system
-  
-}
-
-
-
-
-uint8_t check4over(uint8_t a, uint8_t buff)
+void display()
 {
-    if(buff > a)
-    {
-      return TRUE;
-    }
-    else
-    {
-      return FALSE;
-    }
-    
-    
+  drawWorld();
+  // TODO: Draw entities
 }
 
-void genworld() 
+void generateWorld()
 {
   initarand(sys_time);
-  uint8_t noise[mapX];
+  uint8_t noise[MAP_WIDTH];
   uint8_t level = 1;
-  #define maxterhi 8
-  #define minterhi 0
+#define maxterhi 8
+#define minterhi 0
 
-
-
-  for(uint16_t i = 0; i < mapX; i++) 
+  for (uint16_t i = 0; i < MAP_WIDTH; i++)
   {
 
-    
-
-    if(randomPercent(30)==TRUE) 
+    if (randomPercent(76) == TRUE)
     {
       level += 1;
       goto SKIP0;
     }
-    
-    if (randomPercent(5)==TRUE) 
+
+    if (randomPercent(12) == TRUE)
     {
       level += 2;
       goto SKIP0;
     }
-    
-    if(randomPercent(30)==TRUE) 
+
+    if (randomPercent(76) == TRUE)
     {
       level -= 1;
       goto SKIP0;
     }
-    
-    if (randomPercent(5)==TRUE) 
+
+    if (randomPercent(12) == TRUE)
     {
       level -= 2;
       goto SKIP0;
-    } 
+    }
 
-    
-    noise[i]=noise[i-1];
+    noise[i] = noise[i - 1];
     goto SKIP01;
-    
-    
-    SKIP0:
-    
+
+  SKIP0:
 
     noise[i] = level;
- 
 
-    SKIP01:
-    if (level >= maxterhi) {
-    
+  SKIP01:
+    if (level >= maxterhi)
+    {
+
       level = maxterhi;
       noise[i] = level;
       goto SKIP1;
     }
-    if (level <= minterhi) {
-    
+    if (level <= minterhi)
+    {
+
       level = minterhi;
       noise[i] = level;
-      
     }
-    
-    SKIP1:
+
+  SKIP1:
   }
 
-  for (uint8_t y = 0; y < mapY; y++) 
+  for (uint8_t y = 0; y < MAP_HEIGHT; y++)
   {
-    for (uint16_t x = 0; x < mapX; x++) 
+    for (uint16_t x = 0; x < MAP_WIDTH; x++)
     {
-      //setblock(x, y - noise[x], AIR);
-      if(y <= 12)
+      // setBlock(x, y - noise[x], AIR);
+      if (y <= 12)
       {
         goto SKIP2;
       }
 
-      setblock(x, y - noise[x], DIRT);
-      //setblock(x, (y - noise[x]) + 1, STONE);
+      setBlock(x, y - noise[x], DIRT);
+      // setBlock(x, (y - noise[x]) + 1, STONE);
 
-      if (getblock(x, (y - noise[x]) - 1) == AIR && getblock(x, (y - noise[x]) - 2) == AIR) // checks the above 2 blocks for air, and if there is air, turn into grass
-      { 
-        setblock(x, y - noise[x], GRASS);
-        
+      if (getBlock(x, (y - noise[x]) - 1) == AIR && getBlock(x, (y - noise[x]) - 2) == AIR) // checks the above 2 blocks for air, and if there is air, turn into grass
+      {
+        setBlock(x, y - noise[x], GRASS);
       }
 
-
-      
-      SKIP2:
-      
-    
-    
+    SKIP2:
     }
-  
   }
 
-  for (uint16_t y = 0; y < mapY; y++) 
+  for (uint16_t y = 0; y < MAP_HEIGHT; y++)
   {
-    for (uint16_t x = 0; x < mapX; x++) 
+    for (uint16_t x = 0; x < MAP_WIDTH; x++)
     {
-      if(getblock(x,y)==STONE || getblock(x,y)==DIRT) 
+      if (getBlock(x, y) == STONE || getBlock(x, y) == DIRT)
       {
-        if(y+1 != mapY && getblock(x,y+1)==AIR)
+        if (y + 1 != MAP_HEIGHT && getBlock(x, y + 1) == AIR)
         {
-          setblock(x,y+1,STONE);
+          setBlock(x, y + 1, STONE);
         }
       }
     }
-  } 
-
-   
+  }
 }
 
-void init() {
-  memset(map, 0, sizeof(map));
-  clearVRAM();
-  genworld();
-  blocklocation = pmapy * mapX + pmapx+1;
-  dirx = pmapx + 1;
-  set_bkg_data(0, 16, blocks);
-  set_sprite_data(0, 7, player);
-  set_sprite_tile(0, 6);
-  scroll_bkg(8,8);
-  move_sprite(0, 80, 72);
+void init()
+{
+  //memset(map, 0, sizeof(map));
+  generateWorld();
+  player.x = 10;
+  player.y = 8;
 }
 
-    
-
-
-
-void main(void) {
+void main(void)
+{
   ENABLE_RAM;
+  scroll_bkg(8, 8);
+  move_sprite(0, 80, 72);
+  init();
+  set_bkg_data(0, 16, blocks);
+  set_sprite_data(0, 7, playertiles);
+  set_sprite_tile(0, 6);
+  uint16_t facingX = player.x + 1;
   SHOW_SPRITES;
   SHOW_BKG;
-  init();
-  drawworld();
-  //display();
+  drawWorld();
+  display();
+  // The player's selected block.
+  uint8_t selectedBlock = 4;
+  // The X position that the player is facing
   
-    
-  //uint16_t offset = ((mapX * 3) - mapY);
 
-  while (1) {
-    
+  while (1)
+  {
+    // joypad() takes a while to execute, so save its result and reuse it as needed.
+    // This also ensures that the keys pressed will stay consistent across a game tick.
+    uint8_t cur_keys = joypad();
 
-
-    if (joypad() & J_A) {
-      if (getblock(dirx, pmapy) == 0) //checks the block to the right, and if it's air, it will fill the selected block in with what ever block is in the blockcashe.
-          {
-            setblock(dirx, pmapy, blockcache);
-            if (getblock(dirx, pmapy+1) == GRASS) {
-                setblock(dirx, pmapy+1, DIRT);
-            }
-            display();
-          }
-    } 
-
-    if (joypad() & J_B) {
-      if (getblock(dirx, pmapy) != 0) {
-        setblock(dirx, pmapy, 0);
-        if (getblock(dirx, pmapy+1) == DIRT) {
-                setblock(dirx, pmapy+1, GRASS);
-            }
-        display();
+    if (cur_keys & J_A)
+    {
+      // Attempt to fill the block to the right with the selected block.
+      if (getBlock(facingX, player.y) == AIR)
+      {
+        setBlock(facingX, player.y, selectedBlock);
+        // TODO: Design a more modular block update system.
+        if (getBlock(facingX, player.y + 1) == GRASS)
+        {
+          setBlock(facingX, player.y + 1, DIRT);
+        }
+        
       }
     }
 
-    if (joypad() & J_SELECT) {
-        if(blockcache<16)
+    if (cur_keys & J_B)
+    {
+      if (getBlock(facingX, player.y) != 0)
+      {
+        setBlock(facingX, player.y, 0);
+        if (getBlock(facingX, player.y + 1) == DIRT)
         {
-        blockcache++;   
+          setBlock(facingX, player.y + 1, GRASS);
         }
-        else
-        {
-        blockcache = 0;
-        }
-      
-    }
-    if (joypad() & J_START) {
-        
-        memset(map, 0, sizeof(map)); //zeros world 
-        clearVRAM();
-        genworld();
-        display();
-          
-    }
-
-    if (joypad() & J_UP) {
-
-        
-            //scroll_bkg(0,-8);
-            cy -= 1;
-            pmapy -= 1;
-            display();
-    
-      
-
-    }
-
-    if (joypad() & J_DOWN) {
-
        
-            //scroll_bkg(0,8);
-            cy += 1;
-            pmapy += 1;
-            display();
-        
-
-
+      }
     }
-    if (joypad() & J_LEFT) {
 
-       
-            pmapx -= 1;
-            blocklocation = pmapy * mapX + pmapx-1;
-            dirx = pmapx -1;
-            set_sprite_prop(0, S_FLIPX);
-            cx -= 1;
-            display();
-        
+    // Iterate through the available blocks.
+    if (cur_keys & J_SELECT)
+    {
+      if (selectedBlock < 16)
+      {
+        selectedBlock++;
+      }
+      else
+      {
+        selectedBlock = 1;
+      }
+    }
+
+    if (cur_keys & J_START)
+    {
+      init();
       
-
     }
 
-    if (joypad() & J_RIGHT) {
-
-        
-            pmapx += 1;
-            blocklocation = pmapy * mapX + pmapx+1;
-            dirx = pmapx + 1;
-            set_sprite_prop(0, 0);
-            cx += 1;
-            display();
-        
+    if (cur_keys & J_UP)
+    {
+      // scroll_bkg(0,-8);
+      camera.y -= 1;
+      player.y -= 1;
       
-
+    } 
+    else if (cur_keys & J_DOWN)
+    {
+      // scroll_bkg(0,8);
+      camera.y += 1;
+      player.y += 1;
+      
     }
 
+    if (cur_keys & J_LEFT)
+    {
+      player.x -= 1;
+      facingX = player.x - 1;
+      set_sprite_prop(0, S_FLIPX);
+      camera.x -= 1;
+      
+    } 
+    else if (cur_keys & J_RIGHT)
+    {
+      player.x += 1;
+      facingX = player.x + 1;
+      set_sprite_prop(0, 0);
+      camera.x += 1;
+     
+    }
 
-    //delay(10);
-    
-    //dogravity();
-    // update_world();
-    // player y position was 36
-    // Done processing, yield CPU and wait for start of next frame (VBlank)
+    // If any buttons are pressed, redraw the world.
+    if (cur_keys) {
+			display();
+		}
+
     wait_vbl_done();
   }
 }
-
-/* serial link codes
-add_SIO(), remove_SIO(), send_byte(), receive_byte()
-*/
