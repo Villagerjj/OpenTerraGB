@@ -7,4 +7,4 @@ Run "./compile.bat" to generate a rom.
 
 
 Credits:
-Eievui - helped with variable optimizations, and general help
+Eievui - helped with optimizations, code cleanup, and general help
