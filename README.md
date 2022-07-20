@@ -1,7 +1,7 @@
 
 # OpenTerraGB
 
-An open source version clone of Terraria built with GBDK!
+An open source clone of Terraria built with GBDK!
 
 
 
