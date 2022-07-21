@@ -114,16 +114,16 @@ void placeBlockObject(uint16_t x, uint8_t y, uint8_t ObjectID)
         break;
       
       case 2: //House
-        setBlock(x, y, STONE);
-        setBlock(x, y-1, STONE);
+        setBlock(x-2, y, STONE);
+        setBlock(x-2, y-1, STONE);
+        setBlock(x-2, y-2, STONE);
+        setBlock(x-2, y-2, STONE);
+        setBlock(x-1, y-2, STONE);
         setBlock(x, y-2, STONE);
-        setBlock(x, y-3, STONE);
-        setBlock(x, y-4, STONE);
-        setBlock(x-1, y-5, STONE);
-        setBlock(x, y-5, STONE);
-        setBlock(x+1, y-5, STONE);
-        setBlock(x-1, y-4, STONE);
-        setBlock(x+1, y-4, STONE);
+        setBlock(x+1, y-2, STONE);
+        setBlock(x+2, y-2, STONE);
+        setBlock(x+2, y-1, STONE);
+        setBlock(x+2, y, STONE);
         break;
        
        default:
