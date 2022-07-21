@@ -36,9 +36,9 @@ Yes! depending on the modifications you make, it will be merged into the main br
 
 A ROM will be released when the game is stable, or when 3 main features are completed:
 
-- Chunks
+- Chunks ✅
 - Trees
-- Caves
+- UI and Inventory
 ## Credits
 
 - [@Eievui](https://github.com/eievui5) - Code optimizations, general help
