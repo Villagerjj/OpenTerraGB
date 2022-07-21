@@ -27,20 +27,16 @@ OpenTerraGB has a max world size of 512x192 (98,304 blocks), this takes up all 1
 
 #### What features are you planning?
 
-Currently, the features are not set in stone, but the basic stuff like trees, and caves will be added.
+You can view what features are getting worked on [here!](https://trello.com/b/CcQzzyzf/openterragb)
 
 #### Can I contribute?
 
 Yes! depending on the modifications you make, it will be merged into the main branch, or a seperate/new branch.
 
-#### When will a public ROM be released?
+#### Where can I get a ROM?
 
-A ROM will be released when the game is stable, or when 4 main features are completed:
+A Pre release rom has been released, make sure to read the tips section!
 
-- Chunks ✅
-- Trees ✅
-- Cavess ✅
-- UI and Inventory
 ## Credits
 
 - [@Eievui](https://github.com/eievui5) - Code optimizations, general help
