@@ -2,10 +2,9 @@
     Item IDs in the order of the tileset.
 */
 
-//MODES
-#define TILEID 1
-#define ARRAYID 2
-
+//Object IDs
+#define TREE 1
+#define HOUSE 2
 
 /*litterally just air, kinda counts as light? */
 #define AIR 0 
@@ -21,18 +20,7 @@
 
 #define IRON_ORE 5 //looks like stone, I will probably fix this
 
-#define TL1 6 //the top left part of tree leaves
+#define LEAVES 6 //tree leaves
 
-#define TL2 7 //the middle top part of tree leaves
+#define LOG 7 //a litteral log
 
-#define TL3 8 //the top right part of tree leaves
-
-#define TL4 9 //the bottom left part of tree leaves
-
-#define TL5 10 //the middle bottom part of tree leaves
-
-#define TL6 11 //the bottom right part of tree leaves
-
-#define TREE_TRUNK 12 //the trunk of a tree, when obtained, it turns to normal wood
-
-#define TREE_STUMP 13 //The stump of a tree, same as a log, just looks different

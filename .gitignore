@@ -17,3 +17,5 @@ obj/*
 .vscode/configurationCache.log
 .vscode/dryrun.log
 .vscode/targets.log
+src/TreeTiles.png
+src/world tiles.png
