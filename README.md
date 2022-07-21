@@ -35,10 +35,11 @@ Yes! depending on the modifications you make, it will be merged into the main br
 
 #### When will a public ROM be released?
 
-A ROM will be released when the game is stable, or when 3 main features are completed:
+A ROM will be released when the game is stable, or when 4 main features are completed:
 
 - Chunks ✅
-- Trees
+- Trees ✅
+- Cavess ✅
 - UI and Inventory
 ## Credits
 
