@@ -11,6 +11,8 @@
 #include "player.h"
 #include "itemIDs.h"
 #include "bankLUT.h"
+#include "inventory.h"
+#include "invTiles.h"
 
 #define SCREEN_WIDTH 22
 #define SCREEN_HEIGHT 20
@@ -32,6 +34,8 @@
 // The map is actually 12 times larger than this; it is split up across 12 SRAM
 // banks into 16 tile tall rows.
 extern uint8_t map[8192];
+uint8_t Gstate = 1;
+uint16_t facingX;
 // Generic structure for entities, such as the player, NPCs, or enemies.
 typedef struct entity
 {
@@ -48,6 +52,8 @@ struct
   uint16_t Ox;
   uint8_t Oy;
 } camera;
+
+
 
 // Places a block into VRAM only.
 void drawBlock(uint16_t x, uint8_t y, uint8_t blockID)
@@ -267,6 +273,159 @@ void generateWorld()
 }
 
 
+void loadmenu()
+{
+  set_bkg_data(0,12,invtiles);
+  set_bkg_tiles(1,1,20,18, inventorytilemap);
+}
+void closemenu()
+{
+  set_bkg_data(0,11,blocks);
+  display();
+}
+
+void controls(uint8_t cur)
+{
+
+   
+
+uint8_t selectedBlock = 4;
+
+switch (Gstate)
+{
+case 0: //world rendering
+  if (cur & J_A)
+    {
+      // Attempt to fill the block to the right with the selected block.
+      if (getBlock(facingX, player.y) == AIR)
+      {
+        setBlock(facingX, player.y, selectedBlock);
+        // TODO: Design a more modular block update system.
+        if (getBlock(facingX, player.y + 1) == GRASS)
+        {
+          setBlock(facingX, player.y + 1, DIRT);
+        }
+      }
+    }
+
+    if (cur & J_B)
+    {
+      if (getBlock(facingX, player.y) != 0)
+      {
+        setBlock(facingX, player.y, 0);
+        if (getBlock(facingX, player.y + 1) == DIRT)
+        {
+          setBlock(facingX, player.y + 1, GRASS);
+        }
+      }
+    }
+
+    // Iterate through the available blocks.
+    if (cur & J_SELECT)
+    {
+      
+      Gstate = 1;
+      loadmenu();
+      
+    }
+
+    if (cur & J_START)
+    {
+      //init();
+    }
+
+    if (cur & J_UP)
+    {
+
+      camera.y -= 1;
+      player.y -= 1;
+    }
+    else if (cur & J_DOWN)
+    {
+      // scroll_bkg(0,8);
+      camera.y += 1;
+      player.y += 1;
+    }
+
+    if (cur & J_LEFT)
+    {
+      player.x -= 1;
+      facingX = player.x - 1;
+      set_sprite_prop(0, S_FLIPX);
+      camera.x -= 1;
+    }
+    else if (cur & J_RIGHT)
+    {
+      player.x += 1;
+      facingX = player.x + 1;
+      set_sprite_prop(0, 0);
+      camera.x += 1;
+    
+    }
+
+    if(Gstate == 0 && cur)
+    {
+      display();
+    }
+    delay(10);
+  break;
+
+case 1: //inventory
+
+  if (cur & J_A)
+    {
+      
+    }
+
+    if (cur & J_B)
+    {
+      
+    }
+
+    // Iterate through the available blocks.
+    if (cur & J_SELECT)
+    {
+      
+      Gstate = 0;
+      closemenu();
+      
+    }
+
+    if (cur & J_START)
+    {
+      
+    }
+
+    if (cur & J_UP)
+    {
+
+    }
+    else if (cur & J_DOWN)
+    {
+      
+    }
+
+    if (cur & J_LEFT)
+    {
+      
+    }
+    else if (cur & J_RIGHT)
+    {
+      
+    
+    }
+delay(10);
+  break;
+
+case 2: //chests
+  /* code */
+  break;
+
+default:
+  break;
+}
+}
+
 
 
 
@@ -297,104 +456,39 @@ void init()
 void main(void)
 {
   ENABLE_RAM;
+  if(Gstate != 0)
+  {
+
+  }
+  else
+  {
+    
   init();
+  }
   set_bkg_data(0, 16, blocks);
   set_sprite_data(0, 7, playertiles);
   set_sprite_tile(0, 6);
   scroll_bkg(8, 8);
   move_sprite(0, 80, 72);
-  uint16_t facingX = player.x + 1;
+  
   SHOW_SPRITES;
   SHOW_BKG;
   // drawWorld();
+  
   display();
   // The player's selected block.
-  uint8_t selectedBlock = 4;
+
 
   while (1)
   {
     // joypad() takes a while to execute, so save its result and reuse it as needed.
     // This also ensures that the keys pressed will stay consistent across a game tick.
-    uint8_t cur_keys = joypad();
-
-    if (cur_keys & J_A)
-    {
-      // Attempt to fill the block to the right with the selected block.
-      if (getBlock(facingX, player.y) == AIR)
-      {
-        setBlock(facingX, player.y, selectedBlock);
-        // TODO: Design a more modular block update system.
-        if (getBlock(facingX, player.y + 1) == GRASS)
-        {
-          setBlock(facingX, player.y + 1, DIRT);
-        }
-      }
-    }
-
-    if (cur_keys & J_B)
-    {
-      if (getBlock(facingX, player.y) != 0)
-      {
-        setBlock(facingX, player.y, 0);
-        if (getBlock(facingX, player.y + 1) == DIRT)
-        {
-          setBlock(facingX, player.y + 1, GRASS);
-        }
-      }
-    }
-
-    // Iterate through the available blocks.
-    if (cur_keys & J_SELECT)
-    {
-      if (selectedBlock < 16)
-      {
-        selectedBlock++;
-      }
-      else
-      {
-        selectedBlock = 1;
-      }
-    }
-
-    if (cur_keys & J_START)
-    {
-      init();
-    }
-
-    if (cur_keys & J_UP)
-    {
-
-      camera.y -= 1;
-      player.y -= 1;
-    }
-    else if (cur_keys & J_DOWN)
-    {
-      // scroll_bkg(0,8);
-      camera.y += 1;
-      player.y += 1;
-    }
-
-    if (cur_keys & J_LEFT)
-    {
-      player.x -= 1;
-      facingX = player.x - 1;
-      set_sprite_prop(0, S_FLIPX);
-      camera.x -= 1;
-    }
-    else if (cur_keys & J_RIGHT)
-    {
-      player.x += 1;
-      facingX = player.x + 1;
-      set_sprite_prop(0, 0);
-      camera.x += 1;
-    }
+    
+    
+    controls(joypad());
 
     // If any buttons are pressed, redraw the world.
-    if (cur_keys)
-    {
-      display();
-    }
-
+    
     //
     wait_vbl_done();
   }

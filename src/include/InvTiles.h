@@ -1,6 +1,6 @@
 /*
 
- WORLDTILES.H
+ INVTILES.H
 
  Include File.
 
@@ -10,7 +10,7 @@
   Compression          : None.
   Counter              : None.
   Tile size            : 8 x 8
-  Tiles                : 0 to 13
+  Tiles                : 0 to 11
 
   Palette colors       : None.
   SGB Palette          : None.
@@ -24,8 +24,8 @@
 
 
 /* Bank of tiles. */
-#define blocksBank 0
+#define invtilesBank 0
 /* Start of tile array. */
-extern unsigned char blocks[];
+extern unsigned char invtiles[];
 
-/* End of WORLDTILES.H */
+/* End of INVTILES.H */
