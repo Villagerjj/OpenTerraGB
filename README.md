@@ -13,7 +13,7 @@ OpenTerraGB currently only supports the Nintendo Gameboy, but in the future it m
 
 ## World Size
 
-OpenTerraGB has a max world size of 512x192 (98,304 blocks), this takes up all 12 banks of MBC5 SRAM (128kb) and is the biggest world you can generate. 
+OpenTerraGB has a max world size of 512x192 (98,304 blocks), this takes up 12/16 banks of MBC5 SRAM (128kb) and is the biggest world you can generate. 
 
 | World Size (3DS version of Terraria) | Size of map | OpenTerraGB size |
 | :----------------------------------- | :---------- | :---------------------- |
