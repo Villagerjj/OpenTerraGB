@@ -19,3 +19,4 @@ obj/*
 .vscode/targets.log
 src/TreeTiles.png
 src/world tiles.png
+*.png
