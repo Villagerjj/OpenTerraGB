@@ -57,6 +57,7 @@ $(patsubst src/%.c, obj/%.o, $(SRAM_SRCS)): $(SRAM_SRCS)
 	$(LCC) $(CFLAGS) -Wa-l -Wf-ba9 -c -o obj/sram/save9.o src/sram/save9.c
 	$(LCC) $(CFLAGS) -Wa-l -Wf-ba10 -c -o obj/sram/saveA.o src/sram/saveA.c
 	$(LCC) $(CFLAGS) -Wa-l -Wf-ba11 -c -o obj/sram/saveB.o src/sram/saveB.c
+	$(LCC) $(CFLAGS) -Wa-l -Wf-ba12 -c -o obj/sram/saveC.o src/sram/saveC.c
 
 obj/%.o: src/%.c
 	@mkdir -p $(@D)

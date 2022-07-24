@@ -13,6 +13,8 @@
 #include "bankLUT.h"
 #include "inventory.h"
 #include "invTiles.h"
+#include "numbers.h"
+#include "Cursor.h"
 
 #define SCREEN_WIDTH 22
 #define SCREEN_HEIGHT 20
@@ -30,12 +32,19 @@
 #define MAX_DELAY 100  // the delay used when just scrolling
 #define MIN_DELAY 10   // the delay used when writing to VRAM
 #define VRAM_BORDER 12 // (CAM_JUMP_X + CAM_JUMPBY_X) the X/Y value Camera.Ox/Oy need to be at or above to trigger a refresh of VRAM
-
+#define INV_MAX 24
+#define INV_TILE_OFFSET 22
 // The map is actually 12 times larger than this; it is split up across 12 SRAM
 // banks into 16 tile tall rows.
 extern uint8_t map[8192];
-uint8_t Gstate = 1;
+extern uint8_t InvItems[INV_MAX];
+extern uint8_t InvNumbers[INV_MAX];
+uint8_t Gstate = 0; //0 for world, 1 for inventory, 2 for chests, 3 for title screen
 uint16_t facingX;
+uint8_t cursorx = 0;
+uint8_t cursory = 0;
+uint8_t itemCache;
+uint8_t itemNumCache;
 // Generic structure for entities, such as the player, NPCs, or enemies.
 typedef struct entity
 {
@@ -61,6 +70,96 @@ void drawBlock(uint16_t x, uint8_t y, uint8_t blockID)
   set_bkg_tile_xy(x, y, blockID);
 }
 
+void menuDrawItem(uint16_t x, uint8_t y, uint8_t blockID)
+{
+  set_bkg_tile_xy(x, y, blockID+INV_TILE_OFFSET);
+}
+
+
+void addItem2Inv(uint8_t BlockID, uint8_t Amount)
+{
+  SWITCH_RAM(13);
+  if(BlockID == 0)
+  {
+    goto Inv1Skip;
+  }
+  for(uint8_t i = 0; i < INV_MAX; i++)
+  {
+    if(InvItems[i] == BlockID)
+    {
+      InvNumbers[i] += Amount;
+      break;
+    }
+    else if(InvItems[i] == 0)
+    {
+      InvItems[i] = BlockID;
+      InvNumbers[i] = Amount;
+      break;
+    }
+  
+  }
+  Inv1Skip:
+}
+
+
+void menuDrawNumbers(uint16_t x, uint8_t y, uint8_t val1)
+{
+  if(val1 == 0)
+  {
+    set_bkg_tile_xy(x, y, 12);
+  set_bkg_tile_xy(x+1, y, 12);
+  }
+  else if(val1 < 10)
+  {
+  set_bkg_tile_xy(x, y, 12);
+  set_bkg_tile_xy(x+1, y, (val1+12) );
+  }
+  else if (val1 > 9 && val1 < 20)
+  {
+  set_bkg_tile_xy(x, y, 1+12);
+  set_bkg_tile_xy(x+1, y, (val1+12) - 10);
+  }
+  else if (val1 > 19 && val1 < 30)
+  {
+  set_bkg_tile_xy(x, y, 2+12);
+  set_bkg_tile_xy(x+1, y, (val1+12) - 20);
+  }
+  else if (val1 > 29 && val1 < 40)
+  {
+  set_bkg_tile_xy(x, y, 3+12);
+  set_bkg_tile_xy(x+1, y, (val1+12) - 30);
+  }
+  else if (val1 > 39 && val1 < 50)
+  {
+  set_bkg_tile_xy(x, y, 4+12);
+  set_bkg_tile_xy(x+1, y, (val1+12) - 40);
+  }
+  else if (val1 > 49 && val1 < 60)
+  {
+  set_bkg_tile_xy(x, y, 5+12);
+  set_bkg_tile_xy(x+1, y, (val1+12) - 50);
+  }
+  else if (val1 > 59 && val1 < 70)
+  {
+  set_bkg_tile_xy(x, y, 6+12);
+  set_bkg_tile_xy(x+1, y, (val1+12) - 60);
+  }
+  else if (val1 > 69 && val1 < 80)
+  {
+  set_bkg_tile_xy(x, y, 7+12);
+  set_bkg_tile_xy(x+1, y, (val1+12) - 70);
+  }
+  else if (val1 > 79 && val1 < 90)
+  {
+  set_bkg_tile_xy(x, y, 8+12);
+  set_bkg_tile_xy(x+1, y, (val1+12) - 80);
+  }
+  else if (val1 > 89 && val1 < 100)
+  {
+  set_bkg_tile_xy(x, y, 9+12);
+  set_bkg_tile_xy(x+1, y, (val1+12) - 90);
+  }
+}
 // Places a block into SRAM only.
 void setBlock(uint16_t x, uint8_t y, uint8_t blockID)
 {
@@ -277,10 +376,62 @@ void loadmenu()
 {
   set_bkg_data(0,12,invtiles);
   set_bkg_tiles(1,1,20,18, inventorytilemap);
+  set_sprite_data(0, 2, Cursor);
+  set_sprite_tile(0, 0);
+  move_sprite(0, 24, 48);
+  cursorx = 0;
+  cursory = 0;
+  SWITCH_RAM(13);
+  
+  for(uint8_t i = 0; i < INV_MAX; i++)
+  {
+    
+    set_bkg_data(InvItems[i]+INV_TILE_OFFSET, 1, blocks + 16 * InvItems[i]);
+    
+    
+  }
+  for(uint8_t i = 0; i < 10; i++)
+  {
+    set_bkg_data(i+12, 1, numbers + 16 * i);
+  }
+  for(uint16_t x = 0; x < 6; x += 1)
+  {
+    for(uint8_t y = 0; y < 4; y += 1)
+    {
+      menuDrawItem((x*3)+3,(y*3)+5,InvItems[(y * 6 + x)]);
+      menuDrawNumbers((x*3)+3,(y*3)+6,InvNumbers[(y * 6 + x)]);
+      
+    }
+  }
+  
+  
 }
+
+void Updatemenu()
+{
+  
+  SWITCH_RAM(13);
+  
+  for(uint16_t x = 0; x < 6; x += 1)
+  {
+    for(uint8_t y = 0; y < 4; y += 1)
+    {
+      menuDrawItem((x*3)+3,(y*3)+5,InvItems[(y * 6 + x)]);
+      menuDrawNumbers((x*3)+3,(y*3)+6,InvNumbers[(y * 6 + x)]);
+      
+    }
+  }
+  
+  
+}
+
 void closemenu()
 {
-  set_bkg_data(0,11,blocks);
+  set_bkg_data(0,8,blocks);
+  set_sprite_data(0, 7, playertiles);
+  set_sprite_tile(0, 6);
+  move_sprite(0, 80, 72);
+  SWITCH_RAM(0);
   display();
 }
 
@@ -310,13 +461,17 @@ case 0: //world rendering
 
     if (cur & J_B)
     {
-      if (getBlock(facingX, player.y) != 0)
+      uint8_t tempblock = getBlock(facingX, player.y);
+      
+      if (tempblock != 0)
       {
         setBlock(facingX, player.y, 0);
+        
         if (getBlock(facingX, player.y + 1) == DIRT)
         {
           setBlock(facingX, player.y + 1, GRASS);
         }
+        addItem2Inv(tempblock, 1);
       }
     }
 
@@ -367,13 +522,29 @@ case 0: //world rendering
     {
       display();
     }
-    delay(10);
+    delay(100);
   break;
 
 case 1: //inventory
 
   if (cur & J_A)
     {
+      if(get_sprite_tile(0) == 0)
+      {
+        set_sprite_tile(0, 1);
+        itemCache = InvItems[(cursory * 6 + cursorx)];
+        itemNumCache = InvNumbers[(cursory * 6 + cursorx)];
+        
+      }
+      else if(get_sprite_tile(0) == 1) {
+       set_sprite_tile(0, 0);
+       InvItems[(cursory * 6 + cursorx)] = itemCache;
+       InvNumbers[(cursory * 6 + cursorx)] = itemNumCache;
+       Updatemenu();
+      }
+
+    
+    delay(100);
       
     }
 
@@ -398,23 +569,58 @@ case 1: //inventory
 
     if (cur & J_UP)
     {
-
+      if(cursory != 0)
+      {
+        cursory -= 1;
+      }
+      else
+      {
+        cursory = 0;
+      }
+        
     }
     else if (cur & J_DOWN)
     {
+      if(cursory != 3)
+      {
+        cursory += 1;
+      }
+      else
+      {
+        cursory = 3;
+      }
       
     }
 
     if (cur & J_LEFT)
     {
+      if(cursorx != 0)
+      {
+        cursorx -= 1;
+      }
+      else
+      {
+        cursorx = 0;
+      }
       
     }
     else if (cur & J_RIGHT)
     {
-      
-    
+      if(cursorx != 5)
+      {
+        cursorx += 1;
+      }
+      else
+      {
+        cursorx = 5;
+      }
     }
-delay(10);
+
+    if(Gstate == 1 && cur)
+    {
+      move_sprite(0, (cursorx+1)*24, (cursory+2)*24 );
+    }
+delay(100);
   break;
 
 case 2: //chests
@@ -445,6 +651,7 @@ void init()
   // memset(map, 0, sizeof(map));
   zeroworld();
   generateWorld();
+  
   player.x = 11;
   player.y = 9;
   camera.x = 1;
@@ -465,7 +672,14 @@ void main(void)
     
   init();
   }
-  set_bkg_data(0, 16, blocks);
+  SWITCH_RAM(13);
+  for(uint8_t u = 0; u < INV_MAX; u++)
+  {
+    InvItems[u] = 0;
+    InvNumbers[u] = 0;
+  }
+  SWITCH_RAM(0);
+  set_bkg_data(0, 8, blocks);
   set_sprite_data(0, 7, playertiles);
   set_sprite_tile(0, 6);
   scroll_bkg(8, 8);
