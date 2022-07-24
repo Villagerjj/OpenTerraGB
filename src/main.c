@@ -411,6 +411,8 @@ void Updatemenu()
 {
   
   SWITCH_RAM(13);
+
+
   
   for(uint16_t x = 0; x < 6; x += 1)
   {
@@ -538,8 +540,16 @@ case 1: //inventory
       }
       else if(get_sprite_tile(0) == 1) {
        set_sprite_tile(0, 0);
-       InvItems[(cursory * 6 + cursorx)] = itemCache;
-       InvNumbers[(cursory * 6 + cursorx)] = itemNumCache;
+       if(InvItems[(cursory * 6 + cursorx)] == itemCache)
+       {
+        InvNumbers[(cursory * 6 + cursorx)] += itemNumCache;
+       }
+       else
+       {
+        InvItems[(cursory * 6 + cursorx)] = itemCache;
+        InvNumbers[(cursory * 6 + cursorx)] = itemNumCache;
+       }
+       
        Updatemenu();
       }
 
