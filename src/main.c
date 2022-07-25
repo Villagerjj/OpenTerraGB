@@ -15,6 +15,7 @@
 #include "invTiles.h"
 #include "numbers.h"
 #include "Cursor.h"
+#include "gbt_player.h"
 
 #define SCREEN_WIDTH 22
 #define SCREEN_HEIGHT 20
@@ -39,6 +40,7 @@
 extern uint8_t map[8192];
 extern uint8_t InvItems[INV_MAX];
 extern uint8_t InvNumbers[INV_MAX];
+extern const unsigned char * song_Data[];
 uint8_t Gstate = 0; //0 for world, 1 for inventory, 2 for chests, 3 for title screen
 uint16_t facingX;
 uint8_t cursorx = 0;
@@ -85,9 +87,28 @@ void addItem2Inv(uint8_t BlockID, uint8_t Amount)
   }
   for(uint8_t i = 0; i < INV_MAX; i++)
   {
-    if(InvItems[i] == BlockID)
+    if(InvItems[i] == BlockID && InvNumbers[i] < 99)
     {
-      InvNumbers[i] += Amount;
+      if (InvNumbers[i] + Amount <= 99)
+      {
+        InvNumbers[i] += Amount;
+      }
+      else
+      {
+        for(uint8_t i = 0; i < INV_MAX; i++)
+        {
+          if(InvItems[i] == BlockID)
+          {
+            InvNumbers[i] += Amount;
+          }
+          else if(InvItems[i] == 0)
+          {
+            InvItems[i] = BlockID;
+            InvNumbers[i] = Amount;
+            break;
+          }
+        }
+      }
       break;
     }
     else if(InvItems[i] == 0)
@@ -531,30 +552,70 @@ case 1: //inventory
 
   if (cur & J_A)
     {
+      uint8_t invIndex = (cursory * 6 + cursorx);
+      
       if(get_sprite_tile(0) == 0)
       {
         set_sprite_tile(0, 1);
-        itemCache = InvItems[(cursory * 6 + cursorx)];
-        itemNumCache = InvNumbers[(cursory * 6 + cursorx)];
+        itemCache = InvItems[invIndex];
+        itemNumCache = InvNumbers[invIndex];
         
       }
-      else if(get_sprite_tile(0) == 1) {
+      else if(get_sprite_tile(0) == 1) 
+      {
        set_sprite_tile(0, 0);
-       if(InvItems[(cursory * 6 + cursorx)] == itemCache)
+       if(InvItems[invIndex] == itemCache)
        {
-        InvNumbers[(cursory * 6 + cursorx)] += itemNumCache;
-       }
-       else
-       {
-        InvItems[(cursory * 6 + cursorx)] = itemCache;
-        InvNumbers[(cursory * 6 + cursorx)] = itemNumCache;
-       }
+        //InvNumbers[(cursory * 6 + cursorx)] += itemNumCache;
+        if(InvNumbers[invIndex] < 99)
+        {
+          if ((InvNumbers[invIndex] + itemNumCache) <= 99)
+          {
+            InvNumbers[invIndex] += itemNumCache;
+          }
+          else
+          {
+            InvNumbers[invIndex] += (99 - InvNumbers[invIndex]);
+            itemCache = 99 - itemNumCache;
+            for(uint8_t i = 0; i < INV_MAX; i++)
+            {
+              if(InvItems[i] == itemCache)
+              {
+                if (InvNumbers[invIndex] + itemNumCache <= 99)
+                {
+                  InvNumbers[i] += 99 - itemNumCache;
+                }
+                
+                InvNumbers[i] += itemNumCache;
+              }
+              else if(InvItems[i] == 0)
+              {
+                InvItems[i] = itemCache;
+                InvNumbers[i] = itemNumCache;
+              break;
+              }
+            }
+          }
+      
+        }
+        else if(InvItems[invIndex] == 0)
+        {
+          InvItems[invIndex] = itemCache;
+          InvNumbers[invIndex] = itemNumCache;
+      
+        }
+        }
+        else
+        {
+          InvItems[invIndex] = itemCache;
+          InvNumbers[invIndex] = itemNumCache;
+        }
        
        Updatemenu();
       }
 
     
-    delay(100);
+      delay(100);
       
     }
 
@@ -672,6 +733,13 @@ void init()
 
 void main(void)
 {
+  /* disable_interrupts();
+
+    gbt_play(song_Data, 2, 7);
+    gbt_loop(1);
+
+    set_interrupts(VBL_IFLAG);
+    enable_interrupts(); */
   ENABLE_RAM;
   if(Gstate != 0)
   {
@@ -705,6 +773,7 @@ void main(void)
 
   while (1)
   {
+    wait_vbl_done();
     // joypad() takes a while to execute, so save its result and reuse it as needed.
     // This also ensures that the keys pressed will stay consistent across a game tick.
     
@@ -714,6 +783,7 @@ void main(void)
     // If any buttons are pressed, redraw the world.
     
     //
-    wait_vbl_done();
+    
+    //gbt_update();
   }
 }
