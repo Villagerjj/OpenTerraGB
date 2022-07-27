@@ -15,7 +15,7 @@
 #include "invTiles.h"
 #include "numbers.h"
 #include "Cursor.h"
-#include "gbt_player.h"
+//#include "gbt_player.h"
 
 #define SCREEN_WIDTH 22
 #define SCREEN_HEIGHT 20
@@ -47,6 +47,8 @@ uint8_t cursorx = 0;
 uint8_t cursory = 0;
 uint8_t itemCache;
 uint8_t itemNumCache;
+
+
 // Generic structure for entities, such as the player, NPCs, or enemies.
 typedef struct entity
 {
@@ -65,7 +67,6 @@ struct
 } camera;
 
 
-
 // Places a block into VRAM only.
 void drawBlock(uint16_t x, uint8_t y, uint8_t blockID)
 {
@@ -76,6 +77,7 @@ void menuDrawItem(uint16_t x, uint8_t y, uint8_t blockID)
 {
   set_bkg_tile_xy(x, y, blockID+INV_TILE_OFFSET);
 }
+
 
 
 void addItem2Inv(uint8_t BlockID, uint8_t Amount)
@@ -189,14 +191,9 @@ void setBlock(uint16_t x, uint8_t y, uint8_t blockID)
 }
 
 // gets block from SRAM
-uint8_t getBlockOLD(uint16_t x, uint8_t y)
-{
-  return map[y * MAP_WIDTH + x];
-}
-
 uint8_t getBlock(uint16_t x, uint8_t y)
 {
-  SWITCH_RAM(y/16);
+  SWITCH_RAM(yBankLUT[y]);
   return map[(y % 16) * MAP_WIDTH + x];
 }
 
@@ -270,6 +267,7 @@ void CaveGen(uint16_t x, uint8_t y, uint8_t size)
 }
 
 
+
 bool randomPercent(uint8_t chance)
 {
   if ((arand() % (256)) <= chance)
@@ -337,7 +335,7 @@ void generateWorld()
   {
     for (uint16_t x = 0; x < MAP_WIDTH; x++)
     {
-      // setBlock(x, y - noise[x], AIR);
+      uint8_t temp = (y - noise[x]);
       if (y <= 65)
       {
         goto SKIP2;
@@ -346,25 +344,25 @@ void generateWorld()
 
       if (y >= 70)
       {
-        setBlock(x, y - noise[x], STONE);
+        setBlock(x, temp, STONE);
         
       }
       else
       {
-        setBlock(x, y - noise[x], DIRT);
+        setBlock(x, temp, DIRT);
       }
 
       // setBlock(x, (y - noise[x]) + 1, STONE); 
 
-      if (getBlock(x, (y - noise[x]) - 1) == AIR) // checks the above 2 blocks for air, and if there is air, turn into grass
+      if (getBlock(x, temp - 1) == AIR) // checks the above 2 blocks for air, and if there is air, turn into grass
       {
-        if(randomPercent(10) == TRUE)
+        if(randomPercent(30) == TRUE)
         {
-          placeBlockObject(x, (y - noise[x]) - 1, TREE);
+          placeBlockObject(x, temp - 1, TREE);
         }
         else
         {
-          setBlock(x, y - noise[x], GRASS);
+          setBlock(x, temp, GRASS);
         }
         
       }
@@ -377,6 +375,7 @@ void generateWorld()
   {
     for(uint16_t x = 0; x < MAP_WIDTH; x++)
     {
+      
       if(y <= 75)
       {
         goto SKIP4;
@@ -465,6 +464,7 @@ void controls(uint8_t cur)
 
 uint8_t selectedBlock = 4;
 
+
 switch (Gstate)
 {
 case 0: //world rendering
@@ -473,7 +473,18 @@ case 0: //world rendering
       // Attempt to fill the block to the right with the selected block.
       if (getBlock(facingX, player.y) == AIR)
       {
-        setBlock(facingX, player.y, selectedBlock);
+        SWITCH_RAM(13);
+        if(InvNumbers[0] != 0)
+        {
+          InvNumbers[0] = InvNumbers[0] - 1;
+          setBlock(facingX, player.y, InvItems[0]);
+          SWITCH_RAM(13);
+          if (InvNumbers[0] == 0)
+          {
+            InvItems[0] = 0;
+          }
+        }
+        
         // TODO: Design a more modular block update system.
         if (getBlock(facingX, player.y + 1) == GRASS)
         {
@@ -556,9 +567,13 @@ case 1: //inventory
       
       if(get_sprite_tile(0) == 0)
       {
+        
         set_sprite_tile(0, 1);
+        
         itemCache = InvItems[invIndex];
         itemNumCache = InvNumbers[invIndex];
+        InvItems[invIndex] = 255;
+        InvNumbers[invIndex] = 0;
         
       }
       else if(get_sprite_tile(0) == 1) 
@@ -572,24 +587,50 @@ case 1: //inventory
           if ((InvNumbers[invIndex] + itemNumCache) <= 99)
           {
             InvNumbers[invIndex] += itemNumCache;
+            for(uint8_t i = 0; i < INV_MAX; i++)
+            {
+              if(InvItems[i] == 255)
+              {
+                InvItems[i] = 0;
+                InvNumbers[i] = 0;
+              }
+            }
+            
           }
           else
           {
             InvNumbers[invIndex] += (99 - InvNumbers[invIndex]);
-            itemCache = 99 - itemNumCache;
+            itemNumCache -= 99;
             for(uint8_t i = 0; i < INV_MAX; i++)
             {
               if(InvItems[i] == itemCache)
               {
                 if (InvNumbers[invIndex] + itemNumCache <= 99)
                 {
-                  InvNumbers[i] += 99 - itemNumCache;
+                  InvNumbers[i] += itemNumCache;
+                  for(uint8_t i = 0; i < INV_MAX; i++)
+                  {
+                    if(InvItems[i] == 255)
+                    {
+                      InvItems[i] = 0;
+                      InvNumbers[i] = 0;
+                    }
+                  }
                 }
                 
-                InvNumbers[i] += itemNumCache;
+                //InvNumbers[i] += itemNumCache;
               }
               else if(InvItems[i] == 0)
               {
+                
+                for(uint8_t i = 0; i < INV_MAX; i++)
+                {
+                  if(InvItems[i] == 255)
+                  {
+                    InvItems[i] = InvItems[invIndex];
+                    InvNumbers[i] = InvNumbers[invIndex];
+                  }
+                }
                 InvItems[i] = itemCache;
                 InvNumbers[i] = itemNumCache;
               break;
@@ -600,18 +641,37 @@ case 1: //inventory
         }
         else if(InvItems[invIndex] == 0)
         {
-          InvItems[invIndex] = itemCache;
+          
+          for(uint8_t i = 0; i < INV_MAX; i++)
+                  {
+                    if(InvItems[i] == 255)
+                    {
+                      InvItems[i] = InvItems[invIndex];
+                      InvNumbers[i] = InvNumbers[invIndex];
+                    }
+                  }
+                  InvItems[invIndex] = itemCache;
           InvNumbers[invIndex] = itemNumCache;
       
         }
         }
         else
         {
+          
+          for(uint8_t i = 0; i < INV_MAX; i++)
+          {
+            if(InvItems[i] == 255)
+            {
+              InvItems[i] = InvItems[invIndex];
+              InvNumbers[i] = InvNumbers[invIndex];
+            }
+          }
           InvItems[invIndex] = itemCache;
           InvNumbers[invIndex] = itemNumCache;
         }
        
        Updatemenu();
+       
       }
 
     

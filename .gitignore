@@ -21,3 +21,7 @@ src/TreeTiles.png
 src/world tiles.png
 *.png
 mod2gbt.exe
+*.log
+.vscode/launch.json
+*.exe
+*.gbm
