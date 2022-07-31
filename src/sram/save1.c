@@ -1,2 +1,2 @@
 #include <gb/gb.h>
-uint8_t extendedmap1[8192];
+uint_fast8_t extendedmap1[8192];

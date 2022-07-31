@@ -35,16 +35,18 @@
 #define VRAM_BORDER 12 // (CAM_JUMP_X + CAM_JUMPBY_X) the X/Y value Camera.Ox/Oy need to be at or above to trigger a refresh of VRAM
 #define INV_MAX 24
 #define INV_TILE_OFFSET 22
+#define randomPercent(chance) ((arand()) % (256) <= (chance) ? 1: 0)
+ 
 // The map is actually 12 times larger than this; it is split up across 12 SRAM
 // banks into 16 tile tall rows.
-extern uint8_t map[8192];
+extern uint_fast8_t map[8192];
 extern uint8_t InvItems[INV_MAX];
 extern uint8_t InvNumbers[INV_MAX];
 extern const unsigned char * song_Data[];
 uint8_t Gstate = 0; //0 for world, 1 for inventory, 2 for chests, 3 for title screen
 uint16_t facingX;
 uint8_t cursorx = 0;
-uint8_t cursory = 0;
+uint8_t cursory = 0; 
 uint8_t itemCache;
 uint8_t itemNumCache;
 
@@ -193,7 +195,7 @@ void setBlock(uint16_t x, uint8_t y, uint8_t blockID)
 // gets block from SRAM
 uint8_t getBlock(uint16_t x, uint8_t y)
 {
-  SWITCH_RAM(yBankLUT[y]);
+  SWITCH_RAM(y/16);
   return map[(y % 16) * MAP_WIDTH + x];
 }
 
@@ -205,9 +207,9 @@ void loadblock(uint16_t x, uint8_t y)
 
 void drawWorld()
 {
-  for (uint8_t y = 0; y < SCREEN_HEIGHT; y++)
+  for (uint_fast8_t y = 0; y < SCREEN_HEIGHT; y++)
   {
-    for (uint16_t x = 0; x < SCREEN_WIDTH; x++)
+    for (uint_fast16_t x = 0; x < SCREEN_WIDTH; x++)
     {
       set_bkg_tile_xy(x, y, getBlock(camera.x + x, camera.y + y));
     }
@@ -268,17 +270,6 @@ void CaveGen(uint16_t x, uint8_t y, uint8_t size)
 
 
 
-bool randomPercent(uint8_t chance)
-{
-  if ((arand() % (256)) <= chance)
-  {
-    return TRUE;
-  }
-  else
-  {
-    return FALSE;
-  }
-}
 
 void display()
 {
@@ -290,59 +281,36 @@ void generateWorld()
 {
   initarand(sys_time);
   uint8_t noise[MAP_WIDTH];
-  uint8_t level = 1;
+  uint8_t level = 0;
 #define maxterhi 12
 #define minterhi 0
+#define heightFactor 2
 
-  for (uint16_t i = 0; i < MAP_WIDTH; i++)
+
+  for (uint16_t i = 0; i < MAP_WIDTH; i += 4)
   {
+    level = noise[i-4];
 
-    if (randomPercent(50) == TRUE)
-    {
-      level += 1;
-      goto SKIP0;
-    }
-
-    if (randomPercent(12) == TRUE)
-    {
-      level += 2;
-      goto SKIP0;
-    }
-
-    if (randomPercent(102) == TRUE)
-    {
-      level -= 1;
-      goto SKIP0;
-    }
-
-    if (randomPercent(12) == TRUE)
-    {
-      level -= 2;
-      goto SKIP0;
-    }
-
-    noise[i] = noise[i - 1];
-    goto SKIP1;
-
-  SKIP0:
+    level += randomInRange(0,heightFactor);
+    level -= randomInRange(0,heightFactor);
+    
+    
 
     noise[i] = level;
-
-  SKIP1:
+    noise[i+1] = level;
+    noise[i+2] = level;
+    noise[i+3] = level;
   }
 
-  for (uint8_t y = 0; y < MAP_HEIGHT; y++)
+  for (uint16_t x = 0; x < MAP_WIDTH; x++)
   {
-    for (uint16_t x = 0; x < MAP_WIDTH; x++)
+    for (uint8_t y = 47; y < 175; y++)
     {
-      uint8_t temp = (y - noise[x]);
-      if (y <= 65)
-      {
-        goto SKIP2;
-      }
+      uint8_t temp = (y + noise[x]);
+      
 
 
-      if (y >= 70)
+      if (y > 57)
       {
         setBlock(x, temp, STONE);
         
@@ -354,9 +322,9 @@ void generateWorld()
 
       // setBlock(x, (y - noise[x]) + 1, STONE); 
 
-      if (getBlock(x, temp - 1) == AIR) // checks the above 2 blocks for air, and if there is air, turn into grass
+      if (getBlock(x, temp - 1) == AIR && getBlock(x-1, temp - 2) == AIR) // checks the above 2 blocks for air, and if there is air, turn into grass
       {
-        if(randomPercent(30) == TRUE)
+        if(randomPercent(50) == TRUE)
         {
           placeBlockObject(x, temp - 1, TREE);
         }
@@ -367,27 +335,22 @@ void generateWorld()
         
       }
 
-    SKIP2:
     }
   }
   
-  for(uint8_t y = 0; y < MAP_HEIGHT; y++)
+  for(uint16_t x = 0; x < MAP_WIDTH; x++)
   {
-    for(uint16_t x = 0; x < MAP_WIDTH; x++)
+    for(uint8_t y = 57; y < 175; y++)
     {
-      
-      if(y <= 75)
-      {
-        goto SKIP4;
-      }
       if(getBlock(x, y) == STONE && randomPercent(5) == TRUE)
         {
-          CaveGen(x,y - noise[x], 6);
+          CaveGen(x,y, 6);
           
         }
-      SKIP4:
+      setBlock(x, 192, STONE);
     }
   }
+  
   
 }
 
@@ -754,8 +717,198 @@ case 1: //inventory
 delay(100);
   break;
 
-case 2: //chests
-  /* code */
+case 2: //Crafting
+   if (cur & J_A)
+    {
+      uint8_t invIndex = (cursory * 6 + cursorx);
+      
+      if(get_sprite_tile(0) == 0)
+      {
+        
+        set_sprite_tile(0, 1);
+        
+        itemCache = InvItems[invIndex];
+        itemNumCache = InvNumbers[invIndex];
+        InvItems[invIndex] = 255;
+        InvNumbers[invIndex] = 0;
+        
+      }
+      else if(get_sprite_tile(0) == 1) 
+      {
+       set_sprite_tile(0, 0);
+       if(InvItems[invIndex] == itemCache)
+       {
+        //InvNumbers[(cursory * 6 + cursorx)] += itemNumCache;
+        if(InvNumbers[invIndex] < 99)
+        {
+          if ((InvNumbers[invIndex] + itemNumCache) <= 99)
+          {
+            InvNumbers[invIndex] += itemNumCache;
+            for(uint8_t i = 0; i < INV_MAX; i++)
+            {
+              if(InvItems[i] == 255)
+              {
+                InvItems[i] = 0;
+                InvNumbers[i] = 0;
+              }
+            }
+            
+          }
+          else
+          {
+            InvNumbers[invIndex] += (99 - InvNumbers[invIndex]);
+            itemNumCache -= 99;
+            for(uint8_t i = 0; i < INV_MAX; i++)
+            {
+              if(InvItems[i] == itemCache)
+              {
+                if (InvNumbers[invIndex] + itemNumCache <= 99)
+                {
+                  InvNumbers[i] += itemNumCache;
+                  for(uint8_t i = 0; i < INV_MAX; i++)
+                  {
+                    if(InvItems[i] == 255)
+                    {
+                      InvItems[i] = 0;
+                      InvNumbers[i] = 0;
+                    }
+                  }
+                }
+                
+                //InvNumbers[i] += itemNumCache;
+              }
+              else if(InvItems[i] == 0)
+              {
+                
+                for(uint8_t i = 0; i < INV_MAX; i++)
+                {
+                  if(InvItems[i] == 255)
+                  {
+                    InvItems[i] = InvItems[invIndex];
+                    InvNumbers[i] = InvNumbers[invIndex];
+                  }
+                }
+                InvItems[i] = itemCache;
+                InvNumbers[i] = itemNumCache;
+              break;
+              }
+            }
+          }
+      
+        }
+        else if(InvItems[invIndex] == 0)
+        {
+          
+          for(uint8_t i = 0; i < INV_MAX; i++)
+                  {
+                    if(InvItems[i] == 255)
+                    {
+                      InvItems[i] = InvItems[invIndex];
+                      InvNumbers[i] = InvNumbers[invIndex];
+                    }
+                  }
+                  InvItems[invIndex] = itemCache;
+          InvNumbers[invIndex] = itemNumCache;
+      
+        }
+        }
+        else
+        {
+          
+          for(uint8_t i = 0; i < INV_MAX; i++)
+          {
+            if(InvItems[i] == 255)
+            {
+              InvItems[i] = InvItems[invIndex];
+              InvNumbers[i] = InvNumbers[invIndex];
+            }
+          }
+          InvItems[invIndex] = itemCache;
+          InvNumbers[invIndex] = itemNumCache;
+        }
+       
+       Updatemenu();
+       
+      }
+
+    
+      delay(100);
+      
+    }
+
+    if (cur & J_B)
+    {
+      
+    }
+
+    // Iterate through the available blocks.
+    if (cur & J_SELECT)
+    {
+      
+      Gstate = 0;
+      closemenu();
+      
+    }
+
+    if (cur & J_START)
+    {
+      
+    }
+
+    if (cur & J_UP)
+    {
+      if(cursory != 0)
+      {
+        cursory -= 1;
+      }
+      else
+      {
+        cursory = 0;
+      }
+        
+    }
+    else if (cur & J_DOWN)
+    {
+      if(cursory != 3)
+      {
+        cursory += 1;
+      }
+      else
+      {
+        cursory = 3;
+      }
+      
+    }
+
+    if (cur & J_LEFT)
+    {
+      if(cursorx != 0)
+      {
+        cursorx -= 1;
+      }
+      else
+      {
+        cursorx = 0;
+      }
+      
+    }
+    else if (cur & J_RIGHT)
+    {
+      if(cursorx != 5)
+      {
+        cursorx += 1;
+      }
+      else
+      {
+        cursorx = 5;
+      }
+    }
+
+    if(Gstate == 1 && cur)
+    {
+      move_sprite(0, (cursorx+1)*24, (cursory+2)*24 );
+    }
+delay(100);
   break;
 
 default:
@@ -817,7 +970,7 @@ void main(void)
     InvNumbers[u] = 0;
   }
   SWITCH_RAM(0);
-  set_bkg_data(0, 8, blocks);
+  set_bkg_data(0, 12, blocks);
   set_sprite_data(0, 7, playertiles);
   set_sprite_tile(0, 6);
   scroll_bkg(8, 8);

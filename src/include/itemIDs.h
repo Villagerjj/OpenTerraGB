@@ -24,3 +24,12 @@
 
 #define LOG 7 //a litteral log
 
+#define WOOD 8 //Wood??
+
+#define WOOD_WALL 9 //Wood, but a wall??
+
+#define WOODEN_PLATFORM 10 //Wood, but a platform??
+
+#define WOODEN_DOOR 11 //Wooden door??
+
+#define WORK_BENCH 12 //Work Bench I guess??

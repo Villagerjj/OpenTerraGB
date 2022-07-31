@@ -13,7 +13,7 @@ VERSION := 0
 INCDIRS  = src\ src\include\
 WARNINGS = 
 
-CFLAGS  = $(addprefix -I, $(INCDIRS)) $(addprefix -W, $(WARNINGS))
+CFLAGS  = $(addprefix -I, $(INCDIRS)) $(addprefix -W, $(WARNINGS)) 
 
 SRCS := $(wildcard src/*.c)
 SRAM_SRCS := $(wildcard src/sram/*.c)
