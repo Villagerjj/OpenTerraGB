@@ -33,3 +33,5 @@
 #define WOODEN_DOOR 11 //Wooden door??
 
 #define WORK_BENCH 12 //Work Bench I guess??
+
+#define TORCH 13 //Fire #onAstick

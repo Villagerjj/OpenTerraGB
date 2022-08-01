@@ -12,9 +12,11 @@
 #include "itemIDs.h"
 #include "bankLUT.h"
 #include "inventory.h"
+#include "inventory.h"
 #include "invTiles.h"
 #include "numbers.h"
 #include "Cursor.h"
+#include "Crafting.h"
 //#include "gbt_player.h"
 
 #define SCREEN_WIDTH 22
@@ -34,7 +36,7 @@
 #define MIN_DELAY 10   // the delay used when writing to VRAM
 #define VRAM_BORDER 12 // (CAM_JUMP_X + CAM_JUMPBY_X) the X/Y value Camera.Ox/Oy need to be at or above to trigger a refresh of VRAM
 #define INV_MAX 24
-#define INV_TILE_OFFSET 22
+#define INV_TILE_OFFSET 23
 #define randomPercent(chance) ((arand()) % (256) <= (chance) ? 1: 0)
  
 // The map is actually 12 times larger than this; it is split up across 12 SRAM
@@ -49,6 +51,7 @@ uint8_t cursorx = 0;
 uint8_t cursory = 0; 
 uint8_t itemCache;
 uint8_t itemNumCache;
+uint8_t Crafts[6];
 
 
 // Generic structure for entities, such as the player, NPCs, or enemies.
@@ -354,8 +357,59 @@ void generateWorld()
   
 }
 
+uint8_t findCrafts()
+{
+  for(uint8_t i; i < 6; i++)
+  {
+    switch (i)
+    {
+      case 1: //wooden platform
+      for(uint8_t r; r < INV_MAX; r++)
+      if(InvItems[i] == WOOD)
+      {
+          
+      }
+      break;
 
-void loadmenu()
+    }
+  }
+}
+
+void LoadCraftMenu()
+{
+  set_bkg_data(0,12,invtiles);
+  set_bkg_tiles(1,1,20,18, CraftingTileMap);
+  set_sprite_data(0, 2, Cursor);
+  set_sprite_tile(0, 0);
+  move_sprite(0, 24, 72);
+  cursorx = 0;
+  cursory = 0;
+  SWITCH_RAM(13);
+  
+  for(uint8_t i = 0; i < 6; i++)
+  {
+    
+    set_bkg_data(InvItems[i]+INV_TILE_OFFSET, 1, blocks + 16 * InvItems[i]);
+    
+    
+  }
+  for(uint8_t i = 0; i < 10; i++)
+  {
+    set_bkg_data(i+12, 1, numbers + 16 * i);
+  }
+  for(uint16_t x = 0; x < 6; x += 1)
+  {
+    for(uint8_t y = 0; y < 2; y += 1)
+    {
+      menuDrawItem((x*3)+3,(y*3)+8,InvItems[(y * 6 + x)]);
+      menuDrawNumbers((x*3)+3,(y*3)+9,InvNumbers[(y * 6 + x)]);
+      
+    }
+  }
+  
+}
+
+void loadInvmenu()
 {
   set_bkg_data(0,12,invtiles);
   set_bkg_tiles(1,1,20,18, inventorytilemap);
@@ -390,7 +444,7 @@ void loadmenu()
   
 }
 
-void Updatemenu()
+void UpdateInvmenu()
 {
   
   SWITCH_RAM(13);
@@ -412,7 +466,7 @@ void Updatemenu()
 
 void closemenu()
 {
-  set_bkg_data(0,8,blocks);
+  set_bkg_data(0,16,blocks);
   set_sprite_data(0, 7, playertiles);
   set_sprite_tile(0, 6);
   move_sprite(0, 80, 72);
@@ -468,7 +522,20 @@ case 0: //world rendering
         {
           setBlock(facingX, player.y + 1, GRASS);
         }
-        addItem2Inv(tempblock, 1);
+        if( tempblock == GRASS)
+        {
+          addItem2Inv(DIRT, 1);
+        }
+        else if (tempblock == LOG)
+        {
+          addItem2Inv(WOOD, 1);
+        }
+        else
+        {
+          addItem2Inv(tempblock, 1);
+        }
+        
+        
       }
     }
 
@@ -477,7 +544,7 @@ case 0: //world rendering
     {
       
       Gstate = 1;
-      loadmenu();
+      loadInvmenu();
       
     }
 
@@ -633,7 +700,7 @@ case 1: //inventory
           InvNumbers[invIndex] = itemNumCache;
         }
        
-       Updatemenu();
+       UpdateInvmenu();
        
       }
 
@@ -658,6 +725,10 @@ case 1: //inventory
 
     if (cur & J_START)
     {
+      Gstate = 2;
+      cursorx = 0;
+      cursory = 0;
+      LoadCraftMenu();
       
     }
 
@@ -720,119 +791,6 @@ delay(100);
 case 2: //Crafting
    if (cur & J_A)
     {
-      uint8_t invIndex = (cursory * 6 + cursorx);
-      
-      if(get_sprite_tile(0) == 0)
-      {
-        
-        set_sprite_tile(0, 1);
-        
-        itemCache = InvItems[invIndex];
-        itemNumCache = InvNumbers[invIndex];
-        InvItems[invIndex] = 255;
-        InvNumbers[invIndex] = 0;
-        
-      }
-      else if(get_sprite_tile(0) == 1) 
-      {
-       set_sprite_tile(0, 0);
-       if(InvItems[invIndex] == itemCache)
-       {
-        //InvNumbers[(cursory * 6 + cursorx)] += itemNumCache;
-        if(InvNumbers[invIndex] < 99)
-        {
-          if ((InvNumbers[invIndex] + itemNumCache) <= 99)
-          {
-            InvNumbers[invIndex] += itemNumCache;
-            for(uint8_t i = 0; i < INV_MAX; i++)
-            {
-              if(InvItems[i] == 255)
-              {
-                InvItems[i] = 0;
-                InvNumbers[i] = 0;
-              }
-            }
-            
-          }
-          else
-          {
-            InvNumbers[invIndex] += (99 - InvNumbers[invIndex]);
-            itemNumCache -= 99;
-            for(uint8_t i = 0; i < INV_MAX; i++)
-            {
-              if(InvItems[i] == itemCache)
-              {
-                if (InvNumbers[invIndex] + itemNumCache <= 99)
-                {
-                  InvNumbers[i] += itemNumCache;
-                  for(uint8_t i = 0; i < INV_MAX; i++)
-                  {
-                    if(InvItems[i] == 255)
-                    {
-                      InvItems[i] = 0;
-                      InvNumbers[i] = 0;
-                    }
-                  }
-                }
-                
-                //InvNumbers[i] += itemNumCache;
-              }
-              else if(InvItems[i] == 0)
-              {
-                
-                for(uint8_t i = 0; i < INV_MAX; i++)
-                {
-                  if(InvItems[i] == 255)
-                  {
-                    InvItems[i] = InvItems[invIndex];
-                    InvNumbers[i] = InvNumbers[invIndex];
-                  }
-                }
-                InvItems[i] = itemCache;
-                InvNumbers[i] = itemNumCache;
-              break;
-              }
-            }
-          }
-      
-        }
-        else if(InvItems[invIndex] == 0)
-        {
-          
-          for(uint8_t i = 0; i < INV_MAX; i++)
-                  {
-                    if(InvItems[i] == 255)
-                    {
-                      InvItems[i] = InvItems[invIndex];
-                      InvNumbers[i] = InvNumbers[invIndex];
-                    }
-                  }
-                  InvItems[invIndex] = itemCache;
-          InvNumbers[invIndex] = itemNumCache;
-      
-        }
-        }
-        else
-        {
-          
-          for(uint8_t i = 0; i < INV_MAX; i++)
-          {
-            if(InvItems[i] == 255)
-            {
-              InvItems[i] = InvItems[invIndex];
-              InvNumbers[i] = InvNumbers[invIndex];
-            }
-          }
-          InvItems[invIndex] = itemCache;
-          InvNumbers[invIndex] = itemNumCache;
-        }
-       
-       Updatemenu();
-       
-      }
-
-    
-      delay(100);
       
     }
 
@@ -844,7 +802,8 @@ case 2: //Crafting
     // Iterate through the available blocks.
     if (cur & J_SELECT)
     {
-      
+      cursorx = 0;
+      cursory = 0;
       Gstate = 0;
       closemenu();
       
@@ -852,7 +811,8 @@ case 2: //Crafting
 
     if (cur & J_START)
     {
-      
+      Gstate = 1;
+      loadInvmenu();
     }
 
     if (cur & J_UP)
@@ -869,13 +829,13 @@ case 2: //Crafting
     }
     else if (cur & J_DOWN)
     {
-      if(cursory != 3)
+      if(cursory != 1)
       {
         cursory += 1;
       }
       else
       {
-        cursory = 3;
+        cursory = 1;
       }
       
     }
@@ -904,9 +864,9 @@ case 2: //Crafting
       }
     }
 
-    if(Gstate == 1 && cur)
+    if(Gstate == 2 && cur)
     {
-      move_sprite(0, (cursorx+1)*24, (cursory+2)*24 );
+      move_sprite(0, (cursorx+1)*24, (cursory+3)*24 );
     }
 delay(100);
   break;
@@ -970,7 +930,7 @@ void main(void)
     InvNumbers[u] = 0;
   }
   SWITCH_RAM(0);
-  set_bkg_data(0, 12, blocks);
+  set_bkg_data(0, 16, blocks);
   set_sprite_data(0, 7, playertiles);
   set_sprite_tile(0, 6);
   scroll_bkg(8, 8);
