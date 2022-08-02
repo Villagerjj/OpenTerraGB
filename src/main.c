@@ -1062,7 +1062,7 @@ void main(void)
   
   SHOW_SPRITES;
   SHOW_BKG;
-  set_bkg_data(0, 45, titletiles);
+  set_bkg_data(0, 46, titletiles);
   set_bkg_tiles(0,0,20, 18, Title);
   
   //display();
