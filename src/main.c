@@ -37,8 +37,9 @@
 #define VRAM_BORDER 12 // (CAM_JUMP_X + CAM_JUMPBY_X) the X/Y value Camera.Ox/Oy need to be at or above to trigger a refresh of VRAM
 #define INV_MAX 24
 #define INV_TILE_OFFSET 23
+#define CRAFT_TILE_OFFSET 48
+#define CRAFTS 2 //how many recipes there are in the game
 #define randomPercent(chance) ((arand()) % (256) <= (chance) ? 1: 0)
- 
 // The map is actually 12 times larger than this; it is split up across 12 SRAM
 // banks into 16 tile tall rows.
 extern uint_fast8_t map[8192];
@@ -51,7 +52,10 @@ uint8_t cursorx = 0;
 uint8_t cursory = 0; 
 uint8_t itemCache;
 uint8_t itemNumCache;
-uint8_t Crafts[6];
+uint8_t CraftItems[6];
+uint8_t CraftNums[6];
+uint8_t RecipesItems[6];
+uint8_t RecipesNums[6];
 
 
 // Generic structure for entities, such as the player, NPCs, or enemies.
@@ -83,15 +87,31 @@ void menuDrawItem(uint16_t x, uint8_t y, uint8_t blockID)
   set_bkg_tile_xy(x, y, blockID+INV_TILE_OFFSET);
 }
 
-
+void subItemFromInv(uint8_t BlockID, uint8_t Amount)
+{
+  SWITCH_RAM(13);
+  for(uint8_t i = 0; i < INV_MAX; i++)
+  {
+    if(InvItems[i] == BlockID)
+    {
+      if (InvNumbers[i] - Amount >= 0)
+      {
+        InvNumbers[i] -= Amount;
+      }
+      if(InvNumbers[i] == 0)
+      {
+        InvItems[i]=0;
+      }
+      break;
+    }
+  
+  }
+  
+}
 
 void addItem2Inv(uint8_t BlockID, uint8_t Amount)
 {
   SWITCH_RAM(13);
-  if(BlockID == 0)
-  {
-    goto Inv1Skip;
-  }
   for(uint8_t i = 0; i < INV_MAX; i++)
   {
     if(InvItems[i] == BlockID && InvNumbers[i] < 99)
@@ -126,8 +146,8 @@ void addItem2Inv(uint8_t BlockID, uint8_t Amount)
     }
   
   }
-  Inv1Skip:
 }
+
 
 
 void menuDrawNumbers(uint16_t x, uint8_t y, uint8_t val1)
@@ -357,21 +377,88 @@ void generateWorld()
   
 }
 
-uint8_t findCrafts()
+void findCrafts()
 {
-  for(uint8_t i; i < 6; i++)
+ 
+  for(uint8_t i = 0; i < 6; i++)
   {
-    switch (i)
+    for(uint8_t t = 1; t < CRAFTS; t++)
     {
-      case 1: //wooden platform
       for(uint8_t r; r < INV_MAX; r++)
-      if(InvItems[i] == WOOD)
       {
-          
-      }
-      break;
+        switch (t)
+        {
+          case 1: //wooden platform
+      
+            if(InvItems[r] == WOOD)
+            {
+              if(InvNumbers[r] >= 1)
+              {
+                CraftItems[i] = WOODEN_PLATFORM;
+                CraftNums[i] = 2;
+              }
+            }
+          break;
 
+          case 2: //wooden wall
+            if(InvItems[r] == WOOD)
+            {
+              if(InvNumbers[r] >= 1)
+              {
+                CraftItems[i] = WOODEN_PLATFORM;
+                CraftNums[i] = 2;
+              }
+            }
+          break;
+
+        }
+      }
     }
+    
+  }
+}
+
+void Craft(uint8_t slot)
+{
+switch (CraftItems[slot])
+{
+case WOODEN_PLATFORM://wooden platform
+  subItemFromInv(WOOD, 1);
+  addItem2Inv(WOODEN_PLATFORM, 2);
+  break;
+
+default:
+  break;
+}
+}
+
+void GetRecipes(uint8_t slot)
+{
+switch (CraftItems[slot])
+{
+case WOODEN_PLATFORM://wooden platform
+  RecipesItems[1] = WOOD;
+  RecipesNums[1] = 1;
+  break;
+
+default:
+  break;
+}
+}
+
+void UpdateCraftMenu()
+{
+  
+  for(uint8_t i = 0; i < 6; i++)
+  {
+    set_bkg_data(RecipesItems[i]+CRAFT_TILE_OFFSET, 1, blocks + 16 * RecipesItems[i]);
+  }
+  for(uint8_t x = 0; x < 6; x++)
+  {
+    
+      menuDrawItem((x*3)+3,3+8,RecipesItems[x]);
+      menuDrawNumbers((x*3)+3,3+9,RecipesNums[x]);
+      
   }
 }
 
@@ -382,32 +469,31 @@ void LoadCraftMenu()
   set_sprite_data(0, 2, Cursor);
   set_sprite_tile(0, 0);
   move_sprite(0, 24, 72);
+  findCrafts();
+  GetRecipes(0);
   cursorx = 0;
   cursory = 0;
   SWITCH_RAM(13);
   
+  
   for(uint8_t i = 0; i < 6; i++)
   {
     
-    set_bkg_data(InvItems[i]+INV_TILE_OFFSET, 1, blocks + 16 * InvItems[i]);
-    
+    set_bkg_data(CraftItems[i]+INV_TILE_OFFSET, 1, blocks + 16 * CraftItems[i]);
+   
     
   }
-  for(uint8_t i = 0; i < 10; i++)
+  for(uint16_t x = 0; x < 6; x++)
   {
-    set_bkg_data(i+12, 1, numbers + 16 * i);
-  }
-  for(uint16_t x = 0; x < 6; x += 1)
-  {
-    for(uint8_t y = 0; y < 2; y += 1)
-    {
-      menuDrawItem((x*3)+3,(y*3)+8,InvItems[(y * 6 + x)]);
-      menuDrawNumbers((x*3)+3,(y*3)+9,InvNumbers[(y * 6 + x)]);
+    
+      menuDrawItem((x*3)+3,8,CraftItems[x]);
+      menuDrawNumbers((x*3)+3,9,CraftNums[x]);
       
-    }
   }
-  
+  UpdateCraftMenu();
 }
+
+
 
 void loadInvmenu()
 {
@@ -448,7 +534,13 @@ void UpdateInvmenu()
 {
   
   SWITCH_RAM(13);
-
+  for(uint8_t i = 0; i < INV_MAX; i++)
+  {
+    
+    set_bkg_data(InvItems[i]+INV_TILE_OFFSET, 1, blocks + 16 * InvItems[i]);
+    
+    
+  }
 
   
   for(uint16_t x = 0; x < 6; x += 1)
@@ -791,7 +883,7 @@ delay(100);
 case 2: //Crafting
    if (cur & J_A)
     {
-      
+      Craft(cursorx);
     }
 
     if (cur & J_B)
@@ -817,26 +909,12 @@ case 2: //Crafting
 
     if (cur & J_UP)
     {
-      if(cursory != 0)
-      {
-        cursory -= 1;
-      }
-      else
-      {
-        cursory = 0;
-      }
+      
         
     }
     else if (cur & J_DOWN)
     {
-      if(cursory != 1)
-      {
-        cursory += 1;
-      }
-      else
-      {
-        cursory = 1;
-      }
+      
       
     }
 
@@ -850,7 +928,8 @@ case 2: //Crafting
       {
         cursorx = 0;
       }
-      
+      GetRecipes(cursorx);
+      UpdateCraftMenu();
     }
     else if (cur & J_RIGHT)
     {
@@ -862,6 +941,8 @@ case 2: //Crafting
       {
         cursorx = 5;
       }
+      GetRecipes(cursorx);
+      UpdateCraftMenu();
     }
 
     if(Gstate == 2 && cur)
