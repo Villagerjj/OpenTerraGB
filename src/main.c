@@ -17,6 +17,8 @@
 #include "numbers.h"
 #include "Cursor.h"
 #include "Crafting.h"
+#include "Titlescreen.h"
+#include "Titletiles.h"
 //#include "gbt_player.h"
 
 #define SCREEN_WIDTH 22
@@ -952,6 +954,26 @@ case 2: //Crafting
 delay(100);
   break;
 
+  case 4: //TitleScreen
+   
+    // Iterate through the available blocks.
+    if (cur & J_SELECT)
+    {
+      ENABLE_RAM;
+      LoadWorld();
+      
+    }
+
+  if (cur & J_START)
+    {
+      ENABLE_RAM;
+      init();
+    }
+    
+
+    
+  break;
+
 default:
   break;
 }
@@ -974,37 +996,6 @@ void zeroworld()
 void init()
 {
   // memset(map, 0, sizeof(map));
-  zeroworld();
-  generateWorld();
-  
-  player.x = 11;
-  player.y = 9;
-  camera.x = 1;
-  camera.y = 1;
-//  camera.Ox = CAM_JUMP_X;
- // camera.Oy = CAM_JUMP_Y;
-}
-
-void main(void)
-{
-  /* disable_interrupts();
-
-    gbt_play(song_Data, 2, 7);
-    gbt_loop(1);
-
-    set_interrupts(VBL_IFLAG);
-    enable_interrupts(); */
-  ENABLE_RAM;
-  if(Gstate != 0)
-  {
-
-  }
-  else
-  {
-    
-  init();
-  }
-  SWITCH_RAM(13);
   for(uint8_t u = 0; u < INV_MAX; u++)
   {
     InvItems[u] = 0;
@@ -1016,12 +1007,55 @@ void main(void)
   set_sprite_tile(0, 6);
   scroll_bkg(8, 8);
   move_sprite(0, 80, 72);
+  zeroworld();
+  generateWorld();
+  
+  
+  player.x = 11;
+  player.y = 9;
+  camera.x = 1;
+  camera.y = 1;
+  Gstate = 0;
+}
+
+void LoadWorld()
+{
+  SWITCH_RAM(0);
+  set_bkg_data(0, 16, blocks);
+  set_sprite_data(0, 7, playertiles);
+  set_sprite_tile(0, 6);
+  scroll_bkg(8, 8);
+  move_sprite(0, 80, 72);
+  player.x = 11;
+  player.y = 9;
+  camera.x = 1;
+  camera.y = 1;
+  Gstate = 0;
+}
+
+void main(void)
+{
+  /* disable_interrupts();
+
+    gbt_play(song_Data, 2, 7);
+    gbt_loop(1);
+
+    set_interrupts(VBL_IFLAG);
+    enable_interrupts(); */
+
+  
+
+  
+  Gstate = 4;
+  SWITCH_RAM(13);
+  
   
   SHOW_SPRITES;
   SHOW_BKG;
-  // drawWorld();
+  set_bkg_data(0, 45, titletiles);
+  set_bkg_tiles(0,0,20, 18, Title);
   
-  display();
+  //display();
   // The player's selected block.
 
 
