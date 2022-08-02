@@ -407,7 +407,7 @@ void findCrafts()
             {
               if(InvNumbers[r] >= 1)
               {
-                CraftItems[i] = WOODEN_PLATFORM;
+                CraftItems[i] = WOOD_WALL;
                 CraftNums[i] = 2;
               }
             }
@@ -429,6 +429,11 @@ case WOODEN_PLATFORM://wooden platform
   addItem2Inv(WOODEN_PLATFORM, 2);
   break;
 
+case WOOD_WALL://wooden platform
+  subItemFromInv(WOOD, 1);
+  addItem2Inv(WOOD_WALL, 4);
+  break;
+
 default:
   break;
 }
@@ -439,8 +444,13 @@ void GetRecipes(uint8_t slot)
 switch (CraftItems[slot])
 {
 case WOODEN_PLATFORM://wooden platform
-  RecipesItems[1] = WOOD;
-  RecipesNums[1] = 1;
+  RecipesItems[0] = WOOD;
+  RecipesNums[0] = 1;
+  break;
+
+case WOOD_WALL://wooden wall lol
+  RecipesItems[0] = WOOD;
+  RecipesNums[0] = 1;
   break;
 
 default:
@@ -971,7 +981,7 @@ delay(100);
     }
     
 
-    
+  delay(100);
   break;
 
 default:

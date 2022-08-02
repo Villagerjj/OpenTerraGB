@@ -3,9 +3,7 @@
 
 An open source clone of Terraria for the Nintendo Gameboy! built with GBDK!
 
-![image](https://user-images.githubusercontent.com/56765269/182480799-b396799e-ba15-4587-a792-8a8116075dc6.png)
-
-![image](https://user-images.githubusercontent.com/56765269/180260422-41a0aff5-5e36-4386-aab2-77f024c29c47.png)
+<img src="https://user-images.githubusercontent.com/56765269/182480799-b396799e-ba15-4587-a792-8a8116075dc6.png" width="45%"></img> <img src="https://user-images.githubusercontent.com/56765269/180260422-41a0aff5-5e36-4386-aab2-77f024c29c47.png" width="45%"></img> 
 
 
 ## Console Support
