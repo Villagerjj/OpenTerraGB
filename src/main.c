@@ -58,7 +58,7 @@ uint8_t CraftItems[6];
 uint8_t CraftNums[6];
 uint8_t RecipesItems[6];
 uint8_t RecipesNums[6];
-
+uint8_t progress = 0;
 
 // Generic structure for entities, such as the player, NPCs, or enemies.
 typedef struct entity
@@ -311,7 +311,7 @@ void generateWorld()
 #define minterhi 0
 #define heightFactor 2
 
-
+progress += 10;
   for (uint16_t i = 0; i < MAP_WIDTH; i += 4)
   {
     level = noise[i-4];
@@ -326,7 +326,7 @@ void generateWorld()
     noise[i+2] = level;
     noise[i+3] = level;
   }
-
+progress += 10;
   for (uint16_t x = 0; x < MAP_WIDTH; x++)
   {
     for (uint8_t y = 47; y < 175; y++)
@@ -362,7 +362,7 @@ void generateWorld()
 
     }
   }
-  
+ progress += 10; 
   for(uint16_t x = 0; x < MAP_WIDTH; x++)
   {
     for(uint8_t y = 57; y < 175; y++)
@@ -984,6 +984,9 @@ delay(100);
   delay(100);
   break;
 
+  case 5: //Loading/no controls
+  menuDrawNumbers(19,14,progress);
+
 default:
   break;
 }
@@ -999,8 +1002,10 @@ void zeroworld()
     for (uint16_t x = 0; x < MAP_WIDTH; x++)
     {
       setBlock(x, y, AIR);
+      
     }
   }
+  progress++;
 }
 
 void init()
@@ -1012,15 +1017,20 @@ void init()
     InvNumbers[u] = 0;
   }
   SWITCH_RAM(0);
+  Gstate = 5;
+  for(uint8_t i = 0; i < 10; i++)
+  {
+    set_bkg_data(i+12, 1, numbers + 16 * i);
+  }
+  menuDrawNumbers(19,16,100);
+
+  move_sprite(0, 80, 72);
+  zeroworld();
+  generateWorld();
   set_bkg_data(0, 16, blocks);
   set_sprite_data(0, 7, playertiles);
   set_sprite_tile(0, 6);
   scroll_bkg(8, 8);
-  move_sprite(0, 80, 72);
-  zeroworld();
-  generateWorld();
-  
-  
   player.x = 11;
   player.y = 9;
   camera.x = 1;
@@ -1072,16 +1082,8 @@ void main(void)
   while (1)
   {
     wait_vbl_done();
-    // joypad() takes a while to execute, so save its result and reuse it as needed.
-    // This also ensures that the keys pressed will stay consistent across a game tick.
-    
     
     controls(joypad());
 
-    // If any buttons are pressed, redraw the world.
-    
-    //
-    
-    //gbt_update();
   }
 }
