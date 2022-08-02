@@ -39,4 +39,5 @@ A Pre release rom has been released, make sure to read the tips section!
 ## Credits
 
 - [@Eievui](https://github.com/eievui5) - Code optimizations, general help
+- [@Pixel Shock](https://pixelshock.itch.io) - Creator of all assets (and a PICO 8 version of Terraria)
 
