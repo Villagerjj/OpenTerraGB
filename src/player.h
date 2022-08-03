@@ -1,6 +1,6 @@
 /*
 
- TITLETILES.H
+ PLAYER.H
 
  Include File.
 
@@ -10,7 +10,7 @@
   Compression          : None.
   Counter              : None.
   Tile size            : 8 x 8
-  Tiles                : 0 to 48
+  Tiles                : 0 to 3
 
   Palette colors       : None.
   SGB Palette          : None.
@@ -24,8 +24,8 @@
 
 
 /* Bank of tiles. */
-#define titletilesBank 0
+#define playertilesBank 0
 /* Start of tile array. */
-extern unsigned char titletiles[];
+extern unsigned char playertiles[];
 
-/* End of TITLETILES.H */
+/* End of PLAYER.H */

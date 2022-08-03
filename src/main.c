@@ -18,6 +18,7 @@
 #include "Cursor.h"
 #include "Crafting.h"
 #include "Titlescreen.h"
+#include "loadingscreen.h"
 #include "Titletiles.h"
 //#include "gbt_player.h"
 
@@ -40,8 +41,10 @@
 #define INV_MAX 24
 #define INV_TILE_OFFSET 23
 #define CRAFT_TILE_OFFSET 48
-#define CRAFTS 2 //how many recipes there are in the game
+#define CRAFTS 3 //how many recipes there are in the game
+#define BLOCK_TOTAL 20 // how many blocks there are in the game.
 #define randomPercent(chance) ((arand()) % (256) <= (chance) ? 1: 0)
+#define INV_BANK 13
 // The map is actually 12 times larger than this; it is split up across 12 SRAM
 // banks into 16 tile tall rows.
 extern uint_fast8_t map[8192];
@@ -50,6 +53,7 @@ extern uint8_t InvNumbers[INV_MAX];
 extern const unsigned char * song_Data[];
 uint8_t Gstate = 0; //0 for world, 1 for inventory, 2 for chests, 3 for title screen
 uint16_t facingX;
+uint8_t facingY;
 uint8_t cursorx = 0;
 uint8_t cursory = 0; 
 uint8_t itemCache;
@@ -59,7 +63,7 @@ uint8_t CraftNums[6];
 uint8_t RecipesItems[6];
 uint8_t RecipesNums[6];
 uint8_t progress = 0;
-
+bool NearWorkBench = FALSE;
 // Generic structure for entities, such as the player, NPCs, or enemies.
 typedef struct entity
 {
@@ -91,7 +95,7 @@ void menuDrawItem(uint16_t x, uint8_t y, uint8_t blockID)
 
 void subItemFromInv(uint8_t BlockID, uint8_t Amount)
 {
-  SWITCH_RAM(13);
+  SWITCH_RAM(INV_BANK);
   for(uint8_t i = 0; i < INV_MAX; i++)
   {
     if(InvItems[i] == BlockID)
@@ -113,7 +117,7 @@ void subItemFromInv(uint8_t BlockID, uint8_t Amount)
 
 void addItem2Inv(uint8_t BlockID, uint8_t Amount)
 {
-  SWITCH_RAM(13);
+  SWITCH_RAM(INV_BANK);
   for(uint8_t i = 0; i < INV_MAX; i++)
   {
     if(InvItems[i] == BlockID && InvNumbers[i] < 99)
@@ -384,14 +388,45 @@ void findCrafts()
  
   for(uint8_t i = 0; i < 6; i++)
   {
-    for(uint8_t t = 1; t < CRAFTS; t++)
+    for(uint8_t t = 0; t < CRAFTS; t++)
     {
-      for(uint8_t r; r < INV_MAX; r++)
-      {
+     
         switch (t)
         {
+          case 0: // torch
+           for(uint8_t r = 0; r < INV_MAX; r++)
+           {
+            if(InvItems[r] == WOOD)
+            {
+              if(InvNumbers[r] >= 1)
+              {
+                for(uint8_t r = 0; r < INV_MAX; r++)
+                {
+                  if(InvItems[r] == GEL)
+                  {
+                    if(InvNumbers[r] >= 1)
+                    {
+                      CraftItems[i] = TORCH;
+                      CraftNums[i] = 3;
+                    }
+                  }
+                  else
+                  {
+                    break;
+                  }
+                }
+              }
+            }
+            else
+            {
+              break;
+            }
+           }
+          break; 
+
           case 1: //wooden platform
-      
+          for(uint8_t r = 0; r < INV_MAX; r++)
+           {
             if(InvItems[r] == WOOD)
             {
               if(InvNumbers[r] >= 1)
@@ -400,10 +435,35 @@ void findCrafts()
                 CraftNums[i] = 2;
               }
             }
+            else
+            {
+              break;
+            }
+           }
           break;
 
-          case 2: //wooden wall
+          case 2: //Work Bench
+          for(uint8_t r = 0; r < INV_MAX; r++)
+           {
             if(InvItems[r] == WOOD)
+            {
+              if(InvNumbers[r] >= 10)
+              {
+                CraftItems[i] = WORK_BENCH;
+                CraftNums[i] = 1;
+              }
+            }
+            else
+            {
+              break;
+            }
+           }
+          break;
+
+          case 3: //wooden wall - bench
+          for(uint8_t r = 0; r < INV_MAX; r++)
+           {
+            if(NearWorkBench == TRUE && InvItems[r] == WOOD)
             {
               if(InvNumbers[r] >= 1)
               {
@@ -411,56 +471,23 @@ void findCrafts()
                 CraftNums[i] = 2;
               }
             }
+            else
+            {
+              break;
+            }
+           }
           break;
 
         }
       }
-    }
+    
     
   }
 }
 
-void Craft(uint8_t slot)
-{
-switch (CraftItems[slot])
-{
-case WOODEN_PLATFORM://wooden platform
-  subItemFromInv(WOOD, 1);
-  addItem2Inv(WOODEN_PLATFORM, 2);
-  break;
-
-case WOOD_WALL://wooden platform
-  subItemFromInv(WOOD, 1);
-  addItem2Inv(WOOD_WALL, 4);
-  break;
-
-default:
-  break;
-}
-}
-
-void GetRecipes(uint8_t slot)
-{
-switch (CraftItems[slot])
-{
-case WOODEN_PLATFORM://wooden platform
-  RecipesItems[0] = WOOD;
-  RecipesNums[0] = 1;
-  break;
-
-case WOOD_WALL://wooden wall lol
-  RecipesItems[0] = WOOD;
-  RecipesNums[0] = 1;
-  break;
-
-default:
-  break;
-}
-}
-
 void UpdateCraftMenu()
 {
-  
+  findCrafts();
   for(uint8_t i = 0; i < 6; i++)
   {
     set_bkg_data(RecipesItems[i]+CRAFT_TILE_OFFSET, 1, blocks + 16 * RecipesItems[i]);
@@ -474,6 +501,61 @@ void UpdateCraftMenu()
   }
 }
 
+void Craft(uint8_t slot)
+{
+switch (CraftItems[slot])
+{
+case WOODEN_PLATFORM://wooden platform
+  subItemFromInv(WOOD, 1);
+  addItem2Inv(WOODEN_PLATFORM, 2);
+  UpdateCraftMenu();
+  break;
+
+case WORK_BENCH://work bench
+  subItemFromInv(WOOD, 10);
+  addItem2Inv(WORK_BENCH, 1);
+  UpdateCraftMenu();
+  break;  
+
+case WOOD_WALL://wooden platform - bench
+  subItemFromInv(WOOD, 1);
+  addItem2Inv(WOOD_WALL, 4);
+  UpdateCraftMenu();
+  break;
+
+default:
+  break;
+}
+
+
+}
+
+void GetRecipes(uint8_t slot)
+{
+switch (CraftItems[slot])
+{
+case WOODEN_PLATFORM://wooden platform
+  RecipesItems[0] = WOOD;
+  RecipesNums[0] = 1;
+  break;
+
+case WORK_BENCH://work bench
+  RecipesItems[0] = WOOD;
+  RecipesNums[0] = 10;
+  break; 
+
+case WOOD_WALL://wooden wall lol
+  RecipesItems[0] = WOOD;
+  RecipesNums[0] = 1;
+  break;
+
+default:
+  break;
+}
+}
+
+
+
 void LoadCraftMenu()
 {
   set_bkg_data(0,12,invtiles);
@@ -485,7 +567,7 @@ void LoadCraftMenu()
   GetRecipes(0);
   cursorx = 0;
   cursory = 0;
-  SWITCH_RAM(13);
+  SWITCH_RAM(INV_BANK);
   
   
   for(uint8_t i = 0; i < 6; i++)
@@ -516,7 +598,7 @@ void loadInvmenu()
   move_sprite(0, 24, 48);
   cursorx = 0;
   cursory = 0;
-  SWITCH_RAM(13);
+  SWITCH_RAM(INV_BANK);
   
   for(uint8_t i = 0; i < INV_MAX; i++)
   {
@@ -545,7 +627,7 @@ void loadInvmenu()
 void UpdateInvmenu()
 {
   
-  SWITCH_RAM(13);
+  SWITCH_RAM(INV_BANK);
   for(uint8_t i = 0; i < INV_MAX; i++)
   {
     
@@ -570,13 +652,73 @@ void UpdateInvmenu()
 
 void closemenu()
 {
-  set_bkg_data(0,16,blocks);
+  set_bkg_data(0,BLOCK_TOTAL,blocks);
   set_sprite_data(0, 7, playertiles);
-  set_sprite_tile(0, 6);
+  set_sprite_tile(0, 0);
   move_sprite(0, 80, 72);
   SWITCH_RAM(0);
   display();
 }
+
+void LoadWorld()
+{
+  SWITCH_RAM(0);
+  set_bkg_data(0, BLOCK_TOTAL, blocks);
+  set_sprite_data(0, 7, playertiles);
+  set_sprite_tile(0, 0);
+  scroll_bkg(8, 8);
+  move_sprite(0, 80, 72);
+  player.x = 11;
+  player.y = 9;
+  camera.x = 1;
+  camera.y = 1;
+  Gstate = 0;
+}
+
+void zeroworld()
+{
+  for (uint16_t y = 0; y < MAP_HEIGHT; y++)
+  {
+    for (uint16_t x = 0; x < MAP_WIDTH; x++)
+    {
+      setBlock(x, y, AIR);
+      
+    }
+  }
+  progress++;
+}
+
+void init()
+{
+  SWITCH_RAM(INV_BANK);
+  for(uint8_t u = 0; u < INV_MAX; u++)
+  {
+    InvItems[u] = 0;
+    InvNumbers[u] = 0;
+  }
+  addItem2Inv(WOODEN_SWORD, 1);
+  addItem2Inv(WOODEN_PICKAXE, 1);
+  addItem2Inv(WOODEN_AXE, 1);
+ // addItem2Inv(WOOD, 99);
+  SWITCH_RAM(0);
+  Gstate = 5;
+  set_bkg_tiles(0,0,20, 18, loading);
+
+  
+  zeroworld();
+  generateWorld();
+  set_bkg_data(0, BLOCK_TOTAL, blocks);
+  set_sprite_data(0, 7, playertiles);
+  set_sprite_tile(0, 0);
+  scroll_bkg(8, 8);
+  move_sprite(0, 80, 72);
+  player.x = 11;
+  player.y = 9;
+  camera.x = 1;
+  camera.y = 1;
+  Gstate = 0;
+}
+
 
 void controls(uint8_t cur)
 {
@@ -591,63 +733,73 @@ switch (Gstate)
 case 0: //world rendering
   if (cur & J_A)
     {
-      // Attempt to fill the block to the right with the selected block.
-      if (getBlock(facingX, player.y) == AIR)
+      SWITCH_RAM(INV_BANK);
+      uint8_t tempblock = getBlock(facingX, facingY);
+      SWITCH_RAM(INV_BANK);
+      if(InvItems[0] == WOODEN_PICKAXE || InvItems[0] == WOODEN_AXE) 
       {
-        SWITCH_RAM(13);
-        if(InvNumbers[0] != 0)
+        if (tempblock != 0)
         {
-          InvNumbers[0] = InvNumbers[0] - 1;
-          setBlock(facingX, player.y, InvItems[0]);
-          SWITCH_RAM(13);
-          if (InvNumbers[0] == 0)
+          setBlock(facingX, facingY, 0);
+        
+          if (getBlock(facingX, facingY + 1) == DIRT)
           {
-            InvItems[0] = 0;
+            setBlock(facingX, facingY + 1, GRASS);
+          }
+          if( tempblock == GRASS)
+          {
+            addItem2Inv(DIRT, 1);
+          }
+          else if (tempblock == LOG)
+          {
+            addItem2Inv(WOOD, 1);
+          }
+          else
+          {
+            addItem2Inv(tempblock, 1);
+          }
+        
+        
+        }
+    
+      
+      }
+      else if (InvItems[0] != WOODEN_SWORD && InvItems[0] != WOODEN_PICKAXE && InvItems[0] != WOODEN_AXE)
+      {
+        if (getBlock(facingX, facingY) == AIR)
+        {
+          SWITCH_RAM(INV_BANK);
+          if(InvNumbers[0] != 0)
+          {
+            InvNumbers[0] = InvNumbers[0] - 1;
+            setBlock(facingX, facingY, InvItems[0]);
+            SWITCH_RAM(INV_BANK);
+            if (InvNumbers[0] == 0)
+            {
+              InvItems[0] = 0;
+           }
+          }
+        
+          // TODO: Design a more modular block update system.
+          if (getBlock(facingX, facingY + 1) == GRASS)
+          {
+            setBlock(facingX, facingY + 1, DIRT);
           }
         }
-        
-        // TODO: Design a more modular block update system.
-        if (getBlock(facingX, player.y + 1) == GRASS)
-        {
-          setBlock(facingX, player.y + 1, DIRT);
-        }
       }
+     
     }
 
     if (cur & J_B)
     {
-      uint8_t tempblock = getBlock(facingX, player.y);
-      
-      if (tempblock != 0)
-      {
-        setBlock(facingX, player.y, 0);
-        
-        if (getBlock(facingX, player.y + 1) == DIRT)
-        {
-          setBlock(facingX, player.y + 1, GRASS);
-        }
-        if( tempblock == GRASS)
-        {
-          addItem2Inv(DIRT, 1);
-        }
-        else if (tempblock == LOG)
-        {
-          addItem2Inv(WOOD, 1);
-        }
-        else
-        {
-          addItem2Inv(tempblock, 1);
-        }
-        
-        
-      }
+      //TODO: add jump features
     }
 
     // Iterate through the available blocks.
     if (cur & J_SELECT)
     {
       
-      Gstate = 1;
+      Gstate = 1; 
       loadInvmenu();
       
     }
@@ -659,31 +811,49 @@ case 0: //world rendering
 
     if (cur & J_UP)
     {
-
+      facingX = player.x;
+      facingY = player.y - 2;
       camera.y -= 1;
       player.y -= 1;
     }
     else if (cur & J_DOWN)
     {
-      // scroll_bkg(0,8);
+      facingX = player.x;
+      facingY = player.y + 2;
       camera.y += 1;
       player.y += 1;
+      
     }
 
     if (cur & J_LEFT)
     {
       player.x -= 1;
+      facingY = player.y;
       facingX = player.x - 1;
       set_sprite_prop(0, S_FLIPX);
       camera.x -= 1;
+      if(get_sprite_tile(0) == 0)
+      {
+        set_sprite_tile(0, 1);
+      }
+      else{
+        set_sprite_tile(0, 0);
+      }
     }
     else if (cur & J_RIGHT)
     {
       player.x += 1;
+      facingY = player.y;
       facingX = player.x + 1;
       set_sprite_prop(0, 0);
       camera.x += 1;
-    
+      if(get_sprite_tile(0) == 0)
+      {
+        set_sprite_tile(0, 1);
+      }
+      else{
+        set_sprite_tile(0, 0);
+      }
     }
 
     if(Gstate == 0 && cur)
@@ -995,63 +1165,7 @@ default:
 
 
 
-void zeroworld()
-{
-  for (uint16_t y = 0; y < MAP_HEIGHT; y++)
-  {
-    for (uint16_t x = 0; x < MAP_WIDTH; x++)
-    {
-      setBlock(x, y, AIR);
-      
-    }
-  }
-  progress++;
-}
 
-void init()
-{
-  // memset(map, 0, sizeof(map));
-  for(uint8_t u = 0; u < INV_MAX; u++)
-  {
-    InvItems[u] = 0;
-    InvNumbers[u] = 0;
-  }
-  SWITCH_RAM(0);
-  Gstate = 5;
-  for(uint8_t i = 0; i < 10; i++)
-  {
-    set_bkg_data(i+12, 1, numbers + 16 * i);
-  }
-  menuDrawNumbers(19,16,100);
-
-  move_sprite(0, 80, 72);
-  zeroworld();
-  generateWorld();
-  set_bkg_data(0, 16, blocks);
-  set_sprite_data(0, 7, playertiles);
-  set_sprite_tile(0, 6);
-  scroll_bkg(8, 8);
-  player.x = 11;
-  player.y = 9;
-  camera.x = 1;
-  camera.y = 1;
-  Gstate = 0;
-}
-
-void LoadWorld()
-{
-  SWITCH_RAM(0);
-  set_bkg_data(0, 16, blocks);
-  set_sprite_data(0, 7, playertiles);
-  set_sprite_tile(0, 6);
-  scroll_bkg(8, 8);
-  move_sprite(0, 80, 72);
-  player.x = 11;
-  player.y = 9;
-  camera.x = 1;
-  camera.y = 1;
-  Gstate = 0;
-}
 
 void main(void)
 {
@@ -1067,12 +1181,12 @@ void main(void)
 
   
   Gstate = 4;
-  SWITCH_RAM(13);
+  SWITCH_RAM(INV_BANK);
   
   
   SHOW_SPRITES;
   SHOW_BKG;
-  set_bkg_data(0, 46, titletiles);
+  set_bkg_data(0, 49, titletiles);
   set_bkg_tiles(0,0,20, 18, Title);
   
   //display();

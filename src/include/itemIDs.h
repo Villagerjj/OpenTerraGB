@@ -4,7 +4,8 @@
 
 //Object IDs
 #define TREE 1
-#define HOUSE 2
+#define HOUSE 2 // turn this into the temple at the edge of the world
+
 
 /*litterally just air, kinda counts as light? */
 #define AIR 0 
@@ -35,3 +36,13 @@
 #define WORK_BENCH 12 //Work Bench I guess??
 
 #define TORCH 13 //Fire #onAstick
+
+#define GEL 14
+
+#define WOODEN_SWORD 15
+
+#define WOODEN_PICKAXE 16
+
+#define WOODEN_AXE 17
+
+#define MUSHROOM 18
