@@ -28,3 +28,4 @@ mod2gbt.exe
 *.log
 *.log
 *.log
+.vscode/settings.json
