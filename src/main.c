@@ -63,12 +63,15 @@ uint8_t CraftNums[6];
 uint8_t RecipesItems[6];
 uint8_t RecipesNums[6];
 uint8_t progress = 0;
+
 bool NearWorkBench = FALSE;
 // Generic structure for entities, such as the player, NPCs, or enemies.
 typedef struct entity
 {
-  uint16_t x;
+  uint16_t x; // tile cord of thing
   uint8_t y;
+  uint16_t Px; //pixel cord of thingy
+  uint8_t Py;
 } entity;
 
 entity player;
@@ -234,16 +237,46 @@ void loadblock(uint16_t x, uint8_t y)
   set_bkg_tile_xy(x, y, map[y * MAP_WIDTH + x]);
 }
 
-void drawWorld()
+void submap(uint16_t x, uint8_t y, uint8_t w, uint8_t h)
 {
-  for (uint_fast8_t y = 0; y < SCREEN_HEIGHT; y++)
+  uint8_t Ny = y + 17;
+  uint16_t Nx = x + 19;
+  uint8_t Nh = h + 18;
+  uint8_t Nw = w + 20;
+
+  for (Ny; Ny < Nh; Ny++)
   {
-    for (uint_fast16_t x = 0; x < SCREEN_WIDTH; x++)
+    for (Nx; Nx < Nw; Nx++)
     {
-      set_bkg_tile_xy(x, y, getBlock(camera.x + x, camera.y + y));
+      set_bkg_tile_xy(Nx, Ny, getBlock(camera.x + x, camera.y + y));
     }
   }
 }
+//draws the camera viewport
+void drawWorld()
+{
+  SCX_REG = camera.x*8; SCY_REG = camera.y*8; 
+  if(camera.x > camera.Ox)
+  {
+    submap(camera.x,camera.y,2,18);
+  }
+  else
+  {
+    submap(camera.x-20,camera.y,2,18);
+  }
+
+  if(camera.y > camera.Oy)
+  {
+    submap(camera.x,camera.y,20,2);
+  }
+  else
+  {
+    submap(camera.x,camera.y-18,20,2);
+  }
+  camera.Ox = camera.x;
+  camera.Oy = camera.y;
+}
+
 
 uint8_t randomInRange(uint8_t lower, uint8_t upper)
 {
@@ -672,6 +705,7 @@ void LoadWorld()
   player.y = 9;
   camera.x = 1;
   camera.y = 1;
+  submap(camera.x, camera.y, 20, 18);
   Gstate = 0;
 }
 
@@ -716,6 +750,7 @@ void init()
   player.y = 9;
   camera.x = 1;
   camera.y = 1;
+  submap(camera.x, camera.y, 20, 18);
   Gstate = 0;
 }
 
@@ -815,6 +850,7 @@ case 0: //world rendering
       facingY = player.y - 2;
       camera.y -= 1;
       player.y -= 1;
+      player.Py -= 8;
     }
     else if (cur & J_DOWN)
     {
@@ -822,12 +858,14 @@ case 0: //world rendering
       facingY = player.y + 2;
       camera.y += 1;
       player.y += 1;
+      player.Py += 8;
       
     }
 
     if (cur & J_LEFT)
     {
       player.x -= 1;
+      player.Px -= 8;
       facingY = player.y;
       facingX = player.x - 1;
       set_sprite_prop(0, S_FLIPX);
@@ -843,6 +881,7 @@ case 0: //world rendering
     else if (cur & J_RIGHT)
     {
       player.x += 1;
+      player.Px += 8;
       facingY = player.y;
       facingX = player.x + 1;
       set_sprite_prop(0, 0);
