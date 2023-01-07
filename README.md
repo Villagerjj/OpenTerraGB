@@ -22,7 +22,7 @@ OpenTerraGB has a max world size of 512x192 (98,304 blocks), this takes up 12/16
 
 ## Entity Limits
 
-OpenTerraGB has an entity cap of 58. The 3DS version of Terraria has a cap of 200 entities, I have chosen 58 as this respects the GB's limitations, while also being proportinal to the 3DS's world sizes to entity cap. 
+OpenTerraGB has an entity cap of 58. The 3DS version of Terraria has a cap of 200 entities, I have chosen 58 as this respects the GB's limitations, while also being proportinal to the 3DS's world sizes to entity cap ratio. 
 
 <!--200/1750 =  0.1142857143 ( this is how many entities can be spawned per block).
 512 *  0.1142857143 = 58.5142857216 ( this is then rounded down, because 58 sounds better than 59).-->
