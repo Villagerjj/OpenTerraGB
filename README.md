@@ -2,7 +2,7 @@
 # OpenTerraGB
 
 An open source clone of Terraria for the Nintendo Gameboy! built with GBDK!
-
+join the discord: https://discord.gg/cc888Xvdxu
 <img src="https://user-images.githubusercontent.com/56765269/182481748-6df4429b-1045-4d03-bb33-c2d8e411bade.png" width="45%"></img> <img src="https://user-images.githubusercontent.com/56765269/180260422-41a0aff5-5e36-4386-aab2-77f024c29c47.png" width="45%"></img> 
 
 
